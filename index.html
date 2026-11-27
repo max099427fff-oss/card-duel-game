@@ -19,6 +19,15 @@ button:disabled{opacity:.4}
 #menu h1{margin:0;font-size:28px;background:linear-gradient(90deg,var(--ac),var(--ac2));-webkit-background-clip:text;color:transparent}
 #menu .b{width:min(320px,80vw)}
 .coins{font-weight:700;color:var(--ac2)}
+.fx{position:fixed;inset:0;z-index:80;display:none;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 45%,#2a3a7a99,#05081ccc);text-align:center}
+.fx.on{display:flex;animation:fxin .25s}
+@keyframes fxin{from{opacity:0}to{opacity:1}}
+.fx.op #fxName{color:#ff9aa5}
+#fxName{font-size:26px;font-weight:700;margin-top:6px;color:#ffe27a;text-shadow:0 2px 8px #000}
+#fxStat{font-size:18px;direction:ltr;margin-top:4px}
+#fxCss{perspective:700px;font-size:30px}
+#fxCss .card{--cw:140px;animation:fxspin 2s ease-out both;transform-style:preserve-3d}
+@keyframes fxspin{from{transform:rotateY(-180deg) scale(.4)}to{transform:rotateY(0) scale(1.4)}}
 #bld{position:fixed;left:4px;bottom:2px;font:9px monospace;opacity:.45;z-index:50;pointer-events:none;direction:ltr}
 #qa{position:fixed;left:4px;top:2px;font:9px monospace;color:#9f9;z-index:50;pointer-events:none;white-space:pre;direction:ltr}
 /* duel */
@@ -88,6 +97,7 @@ button:disabled{opacity:.4}
   <button class="b" id="bOn" disabled>🌐 أونلاين مع صديق (قريباً)</button>
   <button class="b" id="bDeck">🃏 رتّب دك البطاقات</button>
   <button class="b" id="bShop">🛒 المتجر</button>
+  <button class="b" id="bFx"></button>
   <button class="b" id="bRules">📖 طريقة اللعب</button>
   <div style="font-size:11px;opacity:.6;max-width:320px">الوحوش والأسماء والرسومات أصلية في هذه اللعبة، وليست بطاقات رسمية من أي لعبة أو أنمي.</div>
 </div>
@@ -104,6 +114,7 @@ button:disabled{opacity:.4}
 <div id="deckb" class="scr"><div class="top"><button id="deckBack">رجوع</button><b>الدك: <span id="deckN"></span>/40</b><button id="deckAuto">تلقائي</button></div><div class="scrl"><div class="grid" id="deckGrid"></div></div></div>
 </div>
 <div class="ov" id="sheetOv"><div class="sheet" id="sheet"></div></div>
+<div class="fx" id="fxOv"><canvas id="fxCv" width="10" height="10" style="display:none"></canvas><div id="fxCss" style="display:none"></div><div id="fxName"></div><div id="fxStat"></div></div>
 <div class="ov" id="trapOv"><div class="sheet" id="trapSheet" style="flex-direction:column"></div></div>
 <div class="ov" id="end"><div class="sheet" style="flex-direction:column;text-align:center"><div id="endBody"></div></div></div>
 <div class="ov" id="rulesOv"><div class="sheet" style="flex-direction:column"><div class="rules" id="rulesBody"></div><button id="rulesX" class="pri">تمام</button></div></div>
@@ -450,7 +461,7 @@ var CG = (function () {
 <script id="ui">
 (function () {
 'use strict';
-var BUILD = 'c1-002', Q = new URLSearchParams(location.search), NOSAVE = Q.get('nosave') === '1', QA = Q.get('qa') === '1', AUTO = Q.get('auto') === '1';
+var BUILD = 'c1-003', Q = new URLSearchParams(location.search), NOSAVE = Q.get('nosave') === '1', QA = Q.get('qa') === '1', AUTO = Q.get('auto') === '1';
 var C = CG.CARDS, $ = function (id) { return document.getElementById(id); };
 var errs = []; window.addEventListener('error', function (e) { errs.push(e.message); });
 // ---- save
@@ -516,7 +527,7 @@ function render() {
   $('bEnd').disabled = !myTurn();
   $('modebar').classList.toggle('on', !!mode); if (mode) { $('modetxt').textContent = mode.txt; $('modeOk').style.display = mode.confirm ? '' : 'none'; $('modeOk').disabled = !(mode.confirm && mode.picked && mode.picked.length === mode.n); }
   tweenLp('olp', 1, o.lp); tweenLp('mlp', 0, m.lp);
-  (V.ev || []).forEach(function (e) { if (e.k === 'destroy' || e.k === 'atk') flashEv(e); });
+  (V.ev || []).forEach(function (e) { if (e.k === 'destroy' || e.k === 'atk') flashEv(e); if (e.k === 'sum' && window.FX) { try { FX.sum(e, V); } catch (x) {} } });
   if (V.pending && V.pending.def && !AUTO) showTrap(); else $('trapOv').classList.remove('on');
   if (V.winner !== null) showEnd();
   if (QA) $('qa').textContent = 'build ' + BUILD + ' turn ' + V.turnNo + ' cur ' + V.cur + ' lp ' + m.lp + '/' + o.lp + ' hand ' + m.hand.length + ' pend ' + (V.pending ? 1 : 0) + ' coins ' + META.coins + ' store ' + store + ' winner ' + V.winner + ' errs ' + errs.length + (errs.length ? ' ' + errs[0] : '');
@@ -675,6 +686,118 @@ $('rulesX').onclick = function () { $('rulesOv').classList.remove('on'); };
 $('bld').textContent = BUILD;
 window.__cg = { G: function () { return G; }, V: function () { return V; }, META: function () { return META; }, CG: CG, startGame: startGame, errs: errs, save: save, load: load, store: function () { return store; }, openShop: openShop, openDeck: openDeck, buy: function (id) { var p = CG.price(id); META.coins -= p; META.owned[id] = (META.owned[id] || 0) + 1; save(); }, render: function () { render(); } };
 if (QA) $('qa').textContent = 'build ' + BUILD + ' menu';
+// ---- 3D / summon effect (c1-003). Toggle: META.fx3d (default on). Falls back to CSS 3D card if THREE/WebGL fail.
+var FX = (function () {
+  var THREEURL = Q.get('three') || 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+  var state = 'idle', ren = null, scene = null, cam = null, cur = null, raf = 0, hideT = 0, queue = [];
+  var ATTR = { 'ماء': 0x3a8dff, 'نار': 0xff5d2e, 'أرض': 0x9a7b3a, 'ريح': 0x5fd390, 'ظلام': 0x7a4fc0, 'نور': 0xf0d060, 'حديد': 0x9aa6b8 };
+  var KIND = { '🦊': 'beast', '🦔': 'beast', '🐢': 'beast', '🐺': 'beast', '🐻': 'beast', '🐂': 'beast', '🐅': 'beast', '🐒': 'beast', '🦅': 'bird', '🦉': 'bird', '🧚': 'human', '🛡️': 'human', '🏹': 'human', '🤖': 'human', '🧙': 'human', '🐟': 'fish', '🦑': 'squid', '🐙': 'squid', '🪨': 'golem', '🌋': 'golem', '🔒': 'golem', '👻': 'spirit', '🕷️': 'spider', '🐲': 'dragon', '🐉': 'dragon' };
+  function on() { return META.fx3d !== false; }
+  function webgl() { try { var c = document.createElement('canvas'); return !!(window.WebGLRenderingContext && (c.getContext('webgl') || c.getContext('experimental-webgl'))); } catch (e) { return false; } }
+  function load(cb) {
+    if (window.THREE) return cb(true);
+    if (state === 'loading') { queue.push(cb); return; }
+    if (state === 'failed') return cb(false);
+    state = 'loading'; queue.push(cb);
+    var s = document.createElement('script'); s.src = THREEURL;
+    s.onload = function () { state = window.THREE && webgl() ? 'ready' : 'failed'; var q = queue; queue = []; q.forEach(function (f) { f(state === 'ready'); }); };
+    s.onerror = function () { state = 'failed'; var q = queue; queue = []; q.forEach(function (f) { f(false); }); };
+    document.head.appendChild(s);
+  }
+  // ---- model builders (low-poly primitives)
+  function M(c, o) { return new THREE.MeshLambertMaterial({ color: c, flatShading: true, emissive: o && o.em || 0x000000, transparent: !!(o && o.a), opacity: o && o.a || 1 }); }
+  function add(g, geo, c, x, y, z, s, o) { var m = new THREE.Mesh(geo, M(c, o)); m.position.set(x, y, z); if (s) m.scale.set(s[0], s[1], s[2]); if (o && o.r) m.rotation.set(o.r[0], o.r[1], o.r[2]); g.add(m); return m; }
+  function sph(r) { return new THREE.SphereGeometry(r, 8, 6); }
+  function box(w, h, d) { return new THREE.BoxGeometry(w, h, d); }
+  function cone(r, h, n) { return new THREE.ConeGeometry(r, h, n || 5); }
+  function cyl(a, b, h) { return new THREE.CylinderGeometry(a, b, h, 6); }
+  var B = {
+    beast: function (g, c, d) { var dk = shade(c, .7);
+      add(g, sph(.6), c, 0, .1, 0, [1.5, .9, .9]); add(g, sph(.42), c, 1, .45, 0); add(g, cone(.14, .35), dk, 1.1, .95, .2); add(g, cone(.14, .35), dk, 1.1, .95, -.2);
+      add(g, cone(.14, .4), 0xf2ede0, 1.4, .35, 0, null, { r: [0, 0, -Math.PI / 2] }); add(g, sph(.07), 0x111111, 1.28, .55, .17); add(g, sph(.07), 0x111111, 1.28, .55, -.17);
+      [[.7, .4], [.7, -.4], [-.7, .4], [-.7, -.4]].forEach(function (p) { add(g, cyl(.13, .1, .7), dk, p[0], -.6, p[1]); });
+      add(g, cone(.14, .9), dk, -1.3, .3, 0, null, { r: [0, 0, Math.PI / 2.4] });
+      if (d.name.indexOf('سلحفاة') >= 0) add(g, sph(.8), dk, 0, .5, 0, [1.4, .7, 1]); },
+    dragon: function (g, c, d) { var dk = shade(c, .6), horn = 0xeadfc8;
+      add(g, sph(.7), c, 0, 0, 0, [1.7, 1, 1]); add(g, cyl(.22, .38, 1), c, 1.1, .7, 0, null, { r: [0, 0, -.6] }); add(g, box(.7, .4, .45), c, 1.7, 1.25, 0); add(g, cone(.2, .5), horn, 1.45, 1.6, .15); add(g, cone(.2, .5), horn, 1.45, 1.6, -.15);
+      add(g, sph(.07), 0xffee66, 1.85, 1.35, .2, null, { em: 0xffee66 }); add(g, sph(.07), 0xffee66, 1.85, 1.35, -.2, null, { em: 0xffee66 });
+      var wg = new THREE.Group(); add(wg, cone(.9, 2.6, 3), dk, 0, 1.1, 0, [1, 1, .15], { r: [0, 0, 0] }); wg.position.set(-.1, .6, .6); wg.rotation.x = .9; g.add(wg); var w2 = wg.clone(); w2.position.z = -.6; w2.rotation.x = -.9; g.add(w2); g.userData.w = [wg, w2];
+      add(g, cone(.3, 2), dk, -1.8, -.2, 0, null, { r: [0, 0, Math.PI / 2.3] }); [[.6, .5], [.6, -.5], [-.6, .5], [-.6, -.5]].forEach(function (p) { add(g, cyl(.16, .12, .8), dk, p[0], -.8, p[1]); }); for (var i = 0; i < 4; i++) add(g, cone(.12, .35), horn, .9 - i * .55, .8 - i * .03, 0); },
+    bird: function (g, c, d) { var dk = shade(c, .7);
+      add(g, sph(.55), c, 0, 0, 0, [1.2, 1, .9]); add(g, sph(.33), c, .8, .45, 0); add(g, cone(.12, .4), 0xffc233, 1.2, .4, 0, null, { r: [0, 0, -Math.PI / 2] }); add(g, sph(.06), 0x111111, 1, .55, .17); add(g, sph(.06), 0x111111, 1, .55, -.17);
+      var a = new THREE.Group(); add(a, box(.5, .08, 1.7), dk, 0, 0, .85); a.position.set(0, .2, .3); g.add(a); var b = new THREE.Group(); add(b, box(.5, .08, 1.7), dk, 0, 0, -.85); b.position.set(0, .2, -.3); g.add(b); g.userData.w = [a, b];
+      add(g, box(.9, .06, .5), dk, -.9, 0, 0, null, { r: [0, 0, .3] }); add(g, cyl(.04, .04, .5), 0xffc233, .1, -.7, .2); add(g, cyl(.04, .04, .5), 0xffc233, .1, -.7, -.2); },
+    human: function (g, c, d) { var dk = shade(c, .65), skin = 0xf0c8a0, k = d.emo;
+      add(g, box(.8, 1, .5), c, 0, .1, 0); add(g, sph(.35), skin, 0, .95, 0); add(g, box(.22, .8, .22), dk, 0, -.8, .17); add(g, box(.22, .8, .22), dk, 0, -.8, -.17);
+      add(g, box(.2, .8, .2), c, .05, .1, .6, null, { r: [.4, 0, 0] }); add(g, box(.2, .8, .2), c, .05, .1, -.6, null, { r: [-.4, 0, 0] });
+      if (k === '🧙') { add(g, cone(.4, .9), 0x5a3a9a, 0, 1.55, 0); add(g, cyl(.04, .04, 2), 0x8a5a2a, .5, .3, .75); add(g, sph(.14), 0x66ddff, .5, 1.3, .75, null, { em: 0x66ddff }); }
+      else if (k === '🛡️') { add(g, box(.12, .9, .7), 0xb8c0cc, .45, .2, .8); add(g, sph(.38), 0xb8c0cc, 0, 1, 0, [1, 1.1, 1]); add(g, cyl(.05, .05, 1.8), 0xd8d8e8, .3, .5, -.75); }
+      else if (k === '🏹') { add(g, new THREE.TorusGeometry(.7, .05, 5, 10, Math.PI), 0x8a5a2a, .5, .3, .75, null, { r: [0, 0, Math.PI / 2] }); }
+      else if (k === '🧚') { var w = new THREE.Group(); add(w, box(.05, 1, .7), 0xcff0ff, 0, .3, .5, null, { a: .6 }); add(w, box(.05, 1, .7), 0xcff0ff, 0, .3, -.5, null, { a: .6 }); w.position.x = -.35; g.add(w); g.userData.w = [w]; }
+      else if (k === '🤖') { g.children[1].material = M(0xb8b8c8); add(g, box(.1, .1, .1), 0xff3030, .32, 1, .12, null, { em: 0xff3030 }); add(g, box(.1, .1, .1), 0xff3030, .32, 1, -.12, null, { em: 0xff3030 }); } },
+    fish: function (g, c) { var dk = shade(c, .7); add(g, sph(.7), c, 0, 0, 0, [1.7, 1, .5]); add(g, cone(.55, .9, 3), dk, -1.4, 0, 0, [1, 1, .3], { r: [0, 0, Math.PI / 2] }); add(g, cone(.4, .6, 3), dk, 0, .75, 0, [1, 1, .2]); add(g, sph(.1), 0xffffff, .9, .15, .3); add(g, sph(.05), 0x111111, .97, .15, .35); add(g, sph(.1), 0xffffff, .9, .15, -.3); add(g, sph(.05), 0x111111, .97, .15, -.35); },
+    squid: function (g, c) { var dk = shade(c, .7); add(g, sph(.8), c, 0, .6, 0, [1, 1.2, 1]); add(g, sph(.12), 0xffffff, .55, .75, .35); add(g, sph(.06), 0x111111, .64, .75, .38); add(g, sph(.12), 0xffffff, .55, .75, -.35); add(g, sph(.06), 0x111111, .64, .75, -.38); for (var i = 0; i < 8; i++) { var a = i / 8 * Math.PI * 2; add(g, cone(.14, 1.5), dk, Math.cos(a) * .55, -.7, Math.sin(a) * .55, null, { r: [Math.PI + Math.sin(a) * .3, 0, -Math.cos(a) * .3] }); } },
+    golem: function (g, c, d) { var dk = shade(c, .55); add(g, box(1.3, 1.4, .9), c, 0, 0, 0); add(g, box(.7, .6, .6), dk, 0, 1.15, 0); add(g, box(.35, .35, .35), 0xff8030, .28, 1.2, .2, null, { em: 0xff8030 }); add(g, box(.1, .1, .1), 0xffdd55, .35, 1.22, .22, null, { em: 0xffdd55 });
+      add(g, box(.45, 1.2, .45), dk, 0, .1, .95); add(g, box(.45, 1.2, .45), dk, 0, .1, -.95); add(g, box(.5, .8, .5), dk, 0, -1, .4); add(g, box(.5, .8, .5), dk, 0, -1, -.4);
+      if (d.emo === '🌋') add(g, cone(.5, .7), 0xff5d2e, 0, 1.7, 0, null, { em: 0xff3010 }); if (d.emo === '🔒') { var gold = 0xf0c040; add(g, new THREE.TorusGeometry(1.05, .07, 5, 14), gold, 0, 0, 0, null, { em: 0x806010, r: [Math.PI / 2, .4, 0] }); add(g, new THREE.TorusGeometry(1.05, .07, 5, 14), gold, 0, .2, 0, null, { em: 0x806010, r: [.3, 0, .5] }); add(g, new THREE.TorusGeometry(.5, .05, 5, 12), gold, 0, 1.95, 0, null, { em: 0x806010, r: [Math.PI / 2, 0, 0] }); } },
+    spirit: function (g, c) { add(g, cone(.8, 1.8, 7), 0xe8eaf5, 0, -.1, 0, [1, 1, 1], { a: .75, r: [Math.PI, 0, 0] }); add(g, sph(.6), 0xe8eaf5, 0, 1, 0, null, { a: .8 }); add(g, sph(.1), 0x222233, .45, 1.1, .2); add(g, sph(.1), 0x222233, .45, 1.1, -.2); add(g, sph(.18), 0x222233, .55, .7, 0, [.6, 1, 1]); },
+    spider: function (g, c) { var dk = shade(c, .7); add(g, sph(.6), c, -.5, 0, 0, [1.2, 1, 1]); add(g, sph(.4), dk, .5, .1, 0); for (var i = 0; i < 4; i++) { [1, -1].forEach(function (s) { add(g, cyl(.04, .04, 1.4), dk, .2 - i * .3, -.1, s * .8, null, { r: [s * 1.1, 0, (i - 1.5) * .25] }); }); } add(g, sph(.07), 0xff3030, .85, .25, .12, null, { em: 0xff3030 }); add(g, sph(.07), 0xff3030, .85, .25, -.12, null, { em: 0xff3030 }); }
+  };
+  function shade(c, f) { var r = ((c >> 16) & 255) * f, g = ((c >> 8) & 255) * f, b = (c & 255) * f; return (r << 16) | (g << 8) | (b | 0); }
+  function build(d) {
+    var g = new THREE.Group(), kind = KIND[d.emo] || 'golem', c = ATTR[d.attr] || 0x9a7b3a;
+    if (d.attr === 'ظلام' && kind === 'dragon') c = 0x3a2a55;
+    (B[kind] || B.golem)(g, c, d); g.userData.kind = kind;
+    var box3 = new THREE.Box3().setFromObject(g), sz = box3.getSize(new THREE.Vector3()), ctr = box3.getCenter(new THREE.Vector3()), k = 3.2 / Math.max(sz.x, sz.y, sz.z);
+    var root = new THREE.Group(); g.position.sub(ctr); root.add(g); root.scale.setScalar(k); root.userData = g.userData; root.userData.inner = g; root.userData.k = k; return root;
+  }
+  function ensure() {
+    if (ren) return true;
+    try {
+      var cv = $('fxCv'); ren = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true }); ren.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      scene = new THREE.Scene(); cam = new THREE.PerspectiveCamera(40, 1, .1, 50); cam.position.set(0, 1.2, 7); cam.lookAt(0, 0, 0);
+      scene.add(new THREE.AmbientLight(0xffffff, .65)); var dl = new THREE.DirectionalLight(0xffffff, .9); dl.position.set(3, 5, 4); scene.add(dl);
+      cv.addEventListener('webglcontextlost', function (e) { e.preventDefault(); stopLoop(); state = 'failed'; });
+      return true;
+    } catch (e) { state = 'failed'; return false; }
+  }
+  function stopLoop() { if (raf) cancelAnimationFrame(raf); raf = 0; }
+  function show(d, m, side) {
+    var ov = $('fxOv'); if (!ov) return;
+    $('fxName').textContent = d.name; $('fxStat').textContent = '⚔ ' + (CG.eAtk && m ? CG.eAtk(m) : d.atk) + '   🛡 ' + d.def + '   ★' + d.lv;
+    ov.className = 'fx on ' + (side === 0 ? 'me' : 'op'); clearTimeout(hideT); hideT = setTimeout(hide, 2200);
+    var cv = $('fxCv'), cssc = $('fxCss');
+    function css() { cv.style.display = 'none'; cssc.style.display = ''; cssc.innerHTML = cardH({ id: d.id }); cssc.firstChild.classList.add('fxcard'); }
+    if (!on() || state === 'failed') { css(); return; }
+    cssc.style.display = 'none'; cssc.innerHTML = '';
+    load(function (ok) {
+      if (!ok || !ensure()) { css(); return; }
+      cv.style.display = '';
+      var w = Math.min(window.innerWidth * .9, 420), h = Math.min(window.innerHeight * .5, 360); cv.style.width = w + 'px'; cv.style.height = h + 'px'; ren.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
+      if (cur) { scene.remove(cur); disp(cur); }
+      try { cur = build(d); } catch (e) { cur = null; css(); return; }
+      cur.rotation.y = -.8; scene.add(cur); var t0 = performance.now(); stopLoop();
+      (function loop() {
+        var t = (performance.now() - t0) / 1000, u = Math.min(1, t / .5), s = 1 - Math.pow(1 - u, 3);
+        cur.scale.setScalar(cur.userData.k * (.2 + .8 * s)); cur.rotation.y = -.8 + t * 1.4; cur.position.y = Math.sin(t * 2.2) * .12 + (1 - s) * 1.2;
+        var ws = cur.userData.inner && cur.userData.inner.userData.w; if (ws) ws.forEach(function (x, i) { x.rotation.x = (i ? -1 : 1) * (.7 + Math.sin(t * 6) * .35); });
+        ren.render(scene, cam); raf = requestAnimationFrame(loop);
+      })();
+    });
+  }
+  function disp(o) { o.traverse(function (n) { if (n.geometry) n.geometry.dispose(); if (n.material) n.material.dispose(); }); }
+  function hide() { var ov = $('fxOv'); if (ov) ov.className = 'fx'; stopLoop(); if (cur && scene) { scene.remove(cur); disp(cur); cur = null; } clearTimeout(hideT); }
+  function sum(e, V) {
+    if (AUTO || QA && Q.get('fx') !== '1') return;
+    var row = e.side === 0 ? V.me : V.op, m = row && row.mz[e.f]; if (!m || m.fd) return; var d = C[m.c ? m.c.id : m.id]; if (!d || d.t !== 'm') return;
+    show(d, m, e.side);
+  }
+  function toggle() { META.fx3d = !on(); save(); label(); if (on()) load(function () {}); }
+  function label() { var b = $('bFx'); if (b) b.textContent = '🎬 مؤثرات 3D: ' + (on() ? 'تشغيل' : 'إيقاف'); }
+  window.addEventListener('load', function () { var o = $('fxOv'); if (o) o.onclick = hide; var b = $('bFx'); if (b) b.onclick = toggle; label(); });
+  return { test: function (id) { show(C[id], { c: { id: id }, pos: 'atk', fd: false }, 0); }, sum: sum, show: show, hide: hide, on: on, state: function () { return state; } };
+})();
+window.FX = FX;
 })();
 </script>
 </body>
