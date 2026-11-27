@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>معركة البطاقات</title>
+<style>
+:root{--cw:min(15vw,12.5vh);--bg:#0b1020;--pn:#151c33;--ac:#38e1ff;--ac2:#ffb347;--tx:#e9eefc;--rd:#ff5d6c}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;overflow:hidden}
+button{font:inherit;color:inherit;border:0;border-radius:10px;background:#26335c;padding:10px 14px;min-height:44px}
+button:active{filter:brightness(1.3)}
+button.pri{background:linear-gradient(135deg,#1fb5d6,#3a6df0)}
+button.warn{background:#7a2a38}
+button:disabled{opacity:.4}
+.scr{position:absolute;inset:0;display:none;flex-direction:column;padding:env(safe-area-inset-top) 10px 6px}
+.scr.on{display:flex}
+#menu{align-items:center;justify-content:center;gap:10px;text-align:center}
+#menu h1{margin:0;font-size:28px;background:linear-gradient(90deg,var(--ac),var(--ac2));-webkit-background-clip:text;color:transparent}
+#menu .b{width:min(320px,80vw)}
+.coins{font-weight:700;color:var(--ac2)}
+#bld{position:fixed;left:4px;bottom:2px;font:9px monospace;opacity:.45;z-index:50;pointer-events:none;direction:ltr}
+#qa{position:fixed;left:4px;top:2px;font:9px monospace;color:#9f9;z-index:50;pointer-events:none;white-space:pre;direction:ltr}
+/* duel */
+#duel{padding:0;justify-content:space-between}
+.info{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:3px 10px;background:var(--pn);font-size:13px;min-height:28px}
+.lp{font-weight:800;font-size:17px;direction:ltr;min-width:76px}
+.lp.f{animation:fl .5s}
+@keyframes fl{0%{color:var(--rd);transform:scale(1.25)}100%{color:inherit;transform:none}}
+.row{display:flex;justify-content:center;gap:calc(var(--cw)*.08);direction:ltr}
+.field{display:flex;flex-direction:column;align-items:center;gap:3px;padding:2px 0}
+.slot{width:var(--cw);height:calc(var(--cw)*1.4);border:1px dashed #33406e;border-radius:6px;display:flex;align-items:center;justify-content:center;position:relative}
+.slot.tz{height:calc(var(--cw)*.62);width:calc(var(--cw)*.9)}
+.slot.hl{border:2px solid var(--ac);box-shadow:0 0 10px var(--ac)}
+.slot.sel{border:2px solid var(--ac2);box-shadow:0 0 10px var(--ac2)}
+.card{width:var(--cw);height:calc(var(--cw)*1.4);border-radius:6px;font-size:calc(var(--cw)*.13);display:flex;flex-direction:column;justify-content:space-between;padding:2px 3px;position:relative;overflow:hidden;border:2px solid #000a;text-align:center;line-height:1.1;color:#fff;flex:0 0 auto}
+.card .n{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.85em}
+.card .e{font-size:2.3em;line-height:1}
+.card .st{font-size:.8em;direction:ltr;font-weight:700;display:flex;justify-content:space-between}
+.card .lv{font-size:.75em;color:#ffe27a}
+.t-m{background:linear-gradient(160deg,#a8631e,#4a2a10)}
+.t-s{background:linear-gradient(160deg,#16967c,#0b4a47)}
+.t-t{background:linear-gradient(160deg,#a02a8c,#4a1050)}
+.A-ماء{box-shadow:inset 0 0 0 2px #3a8dff}.A-نار{box-shadow:inset 0 0 0 2px #ff5d2e}.A-أرض{box-shadow:inset 0 0 0 2px #9a7b3a}.A-ريح{box-shadow:inset 0 0 0 2px #7be3a0}.A-ظلام{box-shadow:inset 0 0 0 2px #8a55d6}.A-نور{box-shadow:inset 0 0 0 2px #ffe27a}.A-حديد{box-shadow:inset 0 0 0 2px #c0c8d8}
+.back{background:repeating-linear-gradient(45deg,#1a2b66,#1a2b66 6px,#223a85 6px,#223a85 12px);border:2px solid #7da0ff}
+.card.def{transform:rotate(90deg) scale(.72)}
+.card.hit{animation:hit .4s}
+@keyframes hit{0%,100%{filter:none}30%{filter:brightness(2.2) saturate(2)}}
+.small{width:calc(var(--cw)*.8);height:calc(var(--cw)*.54);font-size:calc(var(--cw)*.2);justify-content:center}
+.small .e{font-size:1.6em}
+#mid{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 8px;min-height:36px;font-size:12px;background:#10162b}
+#log{flex:1;line-height:1.3;max-height:36px;overflow:hidden}
+#turn{font-weight:700;color:var(--ac)}
+#modebar{display:none;align-items:center;justify-content:space-between;gap:6px;padding:3px 8px;background:#3a2e10;font-size:13px}
+#modebar.on{display:flex}
+#hand{display:flex;gap:calc(var(--cw)*.06);padding:3px 6px 4px;overflow-x:auto;direction:ltr;min-height:calc(var(--cw)*1.4 + 8px);justify-content:safe center}
+#hand .card.sel{transform:translateY(-8px);outline:2px solid var(--ac2)}
+#hand .card.off{opacity:.55}
+.ov{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;z-index:30;padding:10px}
+.ov.on{display:flex}
+.sheet{background:var(--pn);border-radius:14px;padding:12px;max-width:min(560px,96vw);max-height:94vh;overflow:auto;display:flex;gap:12px;align-items:flex-start}
+.sheet .big{--cw:min(34vw,26vh,150px)}
+.sheet .txt{flex:1;min-width:0;font-size:14px;line-height:1.5}
+.sheet .btns{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.sheet h3{margin:0 0 4px}
+.scrl{overflow-y:auto;flex:1;padding:4px 0}
+.top{display:flex;justify-content:space-between;align-items:center;padding:6px 2px;gap:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}
+.item{background:var(--pn);border-radius:10px;padding:6px;display:flex;gap:8px;align-items:center}
+.item .card{--cw:56px}
+.item .meta{flex:1;font-size:12px;line-height:1.35}
+.item .cnt{display:flex;flex-direction:column;gap:4px;align-items:center}
+.item.lock{opacity:.8}
+.item.lock .card{filter:grayscale(.8) brightness(.6)}
+.cntb{padding:2px 10px;min-height:32px}
+#end h2{margin:0 0 8px}
+.rules{font-size:14px;line-height:1.6;max-height:70vh;overflow:auto}
+.rules li{margin-bottom:4px}
+</style>
+</head>
+<body>
+<div id="app">
+<div id="menu" class="scr on">
+  <h1>معركة البطاقات</h1>
+  <div class="coins">🪙 <span id="mcoins">0</span> عملة</div>
+  <button class="b pri" id="bAI">⚔️ العب ضد الكمبيوتر</button>
+  <button class="b" id="bOn" disabled>🌐 أونلاين مع صديق (قريباً)</button>
+  <button class="b" id="bDeck">🃏 رتّب دك البطاقات</button>
+  <button class="b" id="bShop">🛒 المتجر</button>
+  <button class="b" id="bRules">📖 طريقة اللعب</button>
+  <div style="font-size:11px;opacity:.6;max-width:320px">الوحوش والأسماء والرسومات أصلية في هذه اللعبة، وليست بطاقات رسمية من أي لعبة أو أنمي.</div>
+</div>
+<div id="duel" class="scr">
+  <div class="info" id="oinfo"></div>
+  <div class="field" id="ofield"><div class="row" id="otz"></div><div class="row" id="omz"></div></div>
+  <div id="mid"><div id="log"></div><div id="turn"></div><button id="bEnd" class="pri" style="min-height:34px;padding:4px 12px">إنهاء الدور</button></div>
+  <div class="field" id="mfield"><div class="row" id="mmz"></div><div class="row" id="mtz"></div></div>
+  <div class="info" id="minfo"></div>
+  <div id="modebar"><span id="modetxt"></span><span><button id="modeOk" class="pri" style="min-height:32px;padding:2px 10px">تأكيد</button> <button id="modeX" style="min-height:32px;padding:2px 10px">إلغاء</button></span></div>
+  <div id="hand"></div>
+</div>
+<div id="shop" class="scr"><div class="top"><button id="shopBack">رجوع</button><b>المتجر</b><span class="coins">🪙 <span id="scoins"></span></span></div><div class="scrl"><div class="grid" id="shopGrid"></div></div></div>
+<div id="deckb" class="scr"><div class="top"><button id="deckBack">رجوع</button><b>الدك: <span id="deckN"></span>/40</b><button id="deckAuto">تلقائي</button></div><div class="scrl"><div class="grid" id="deckGrid"></div></div></div>
+</div>
+<div class="ov" id="sheetOv"><div class="sheet" id="sheet"></div></div>
+<div class="ov" id="trapOv"><div class="sheet" id="trapSheet" style="flex-direction:column"></div></div>
+<div class="ov" id="end"><div class="sheet" style="flex-direction:column;text-align:center"><div id="endBody"></div></div></div>
+<div class="ov" id="rulesOv"><div class="sheet" style="flex-direction:column"><div class="rules" id="rulesBody"></div><button id="rulesX" class="pri">تمام</button></div></div>
+<div id="bld"></div><div id="qa"></div>
+<script id="engine">
+var CG = (function () {
+  'use strict';
+  var CARDS = {}, ORDER = [];
+  function def(id, o) { o.id = id; CARDS[id] = o; ORDER.push(id); }
+  function M(id, name, emo, atk, df, lv, attr, text) { def(id, { t: 'm', name: name, emo: emo, atk: atk, def: df, lv: lv, attr: attr, text: text || '' }); }
+  function S(id, name, emo, k, v, text) { def(id, { t: 's', name: name, emo: emo, k: k, v: v, text: text }); }
+  function T(id, name, emo, k, v, text) { def(id, { t: 't', name: name, emo: emo, k: k, v: v, text: text }); }
+  M('m1', 'ثعلب الغابة', '🦊', 1000, 800, 3, 'أرض', 'يتسلل بين الأشجار ولا يترك أثراً.');
+  M('m2', 'قنفذ الأشواك', '🦔', 800, 1400, 3, 'أرض', 'كل شوكة منه سهم صغير.');
+  M('m3', 'سمكة العاصفة', '🐟', 1100, 700, 3, 'ماء', 'تسبح عكس التيار دائماً.');
+  M('m4', 'غولم الطين', '🪨', 1300, 1500, 4, 'أرض', 'جسد من طين وصخر لا يتعب.');
+  M('m5', 'صقر الريح', '🦅', 1600, 1000, 4, 'ريح', 'ينقضّ من السحاب.');
+  M('m6', 'جنية الزهور', '🧚', 900, 1700, 3, 'نور', 'سحر لطيف وحماية قوية.');
+  M('m7', 'فارس الحديد', '🛡️', 1700, 1200, 4, 'حديد', 'درعه لا يُكسر.');
+  M('m8', 'عنكبوت الظل', '🕷️', 1500, 900, 4, 'ظلام', 'خيوطه تصطاد حتى الضوء.');
+  M('m9', 'سلحفاة الصخر', '🐢', 600, 2000, 3, 'أرض', 'أبطأ المخلوقات وأصلبها.');
+  M('m10', 'ذئب الليل', '🐺', 1800, 1000, 4, 'ظلام', 'عواؤه يسبق ظله.');
+  M('m11', 'رامي الجليد', '🏹', 1400, 1100, 4, 'ماء', 'سهامه تجمّد ما تصيبه.');
+  M('m12', 'روبوت النحاس', '🤖', 1200, 1600, 4, 'حديد', 'صنعه مخترع منسي.');
+  M('m13', 'شبح الضباب', '👻', 1000, 1000, 3, 'ظلام', 'يظهر ويختفي مع الضباب.');
+  M('m14', 'قرد البرق', '🐒', 1300, 1300, 4, 'ريح', 'أسرع من صوت الرعد.');
+  M('m15', 'دب الثلج', '🐻', 2200, 1700, 5, 'ماء', 'يحتاج قرباناً واحداً.');
+  M('m16', 'ثور اللهب', '🐂', 2400, 1500, 5, 'نار', 'حوافره تشعل الأرض.');
+  M('m17', 'ساحر العاصفة', '🧙', 2100, 2000, 5, 'ريح', 'يستدعي الرعد بكلمة.');
+  M('m18', 'حارس الأعماق', '🦑', 2500, 2000, 6, 'ماء', 'يحرس قاع البحر منذ الأزل.');
+  M('m19', 'نمر الغابة', '🐅', 2300, 1600, 5, 'أرض', 'صيّاد لا يخطئ.');
+  M('m20', 'تنين الجليد', '🐲', 3000, 2300, 7, 'ماء', 'يحتاج قربانين. نَفَسه يجمّد الجيوش.');
+  M('m21', 'عملاق البركان', '🌋', 3200, 2500, 8, 'نار', 'يحتاج قربانين. يخرج من فوهة الجبل.');
+  M('m22', 'بومة الفجر', '🦉', 3000, 2600, 7, 'نور', 'يحتاج قربانين. ترى كل شيء قبل أن يحدث.');
+  M('m23', 'ملك الأعماق', '🐙', 3300, 2000, 8, 'ماء', 'يحتاج قربانين. أذرعه تلف الأساطيل.');
+  M('m24', 'تنين الظلام', '🐉', 3500, 2600, 8, 'ظلام', 'يحتاج قربانين. أقوى وحوش الظلام.');
+  S('s1', 'جرعة الشفاء', '🧪', 'heal', 1000, 'استعد 1000 نقطة حياة.');
+  S('s2', 'سهم النار', '🔥', 'burn', 800, 'أصب الخصم بـ 800 ضرر مباشر.');
+  S('s3', 'عاصفة التدمير', '🌪️', 'destroy', 0, 'دمّر وحشاً واحداً من وحوش الخصم.');
+  S('s4', 'قوة الفجر', '☀️', 'boost', 700, 'وحش لك يكسب 700 هجوم حتى نهاية الدور.');
+  S('s5', 'كنز مخفي', '💎', 'draw', 2, 'اسحب بطاقتين.');
+  S('s6', 'بلورة الإنعاش', '🔮', 'revive', 0, 'خذ أقوى وحش من مقبرتك إلى يدك.');
+  T('t1', 'درع النور', '✨', 'negate', 0, 'عند هجوم الخصم: أبطل الهجوم.');
+  T('t2', 'فخ الانعكاس', '🪞', 'destroyAtk', 0, 'عند هجوم الخصم: دمّر الوحش المهاجم.');
+  T('t3', 'مصيدة الأشواك', '🌵', 'thorn', 800, 'عند هجوم الخصم: يخسر الخصم 800 نقطة حياة ثم يكمل الهجوم.');
+  var DECK = [['m1', 2], ['m2', 2], ['m3', 1], ['m4', 2], ['m5', 2], ['m6', 1], ['m7', 2], ['m8', 1], ['m9', 1], ['m10', 2], ['m11', 1], ['m12', 1], ['m13', 1], ['m14', 1],
+    ['m15', 1], ['m16', 1], ['m17', 1], ['m18', 1], ['m20', 1], ['m21', 1],
+    ['s1', 1], ['s2', 2], ['s3', 2], ['s4', 1], ['s5', 1], ['s6', 1], ['t1', 2], ['t2', 2], ['t3', 2]];
+  var DECK_B = DECK.map(function (e) { return e.slice(); });
+  DECK_B[11] = ['m19', 1]; DECK_B[17] = ['m22', 1]; DECK_B[19] = ['m24', 1]; DECK_B[18] = ['m23', 1];
+  var NM = 5, NT = 3, LP0 = 8000, HANDMAX = 7;
+
+  function rng(a) { a = a >>> 0; return function () { a = (a + 0x6D2B79F5) >>> 0; var t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  function cd(c) { return CARDS[c.id]; }
+  function need(c) { var l = CARDS[c.id].lv; return l <= 4 ? 0 : l <= 6 ? 1 : 2; }
+  function mkP(G, list) {
+    var deck = [], i, j, n;
+    list.forEach(function (e) { for (j = 0; j < e[1]; j++) deck.push({ id: e[0], uid: ++G.uid }); });
+    for (i = deck.length - 1; i > 0; i--) { j = Math.floor(G.r() * (i + 1)); n = deck[i]; deck[i] = deck[j]; deck[j] = n; }
+    var p = { lp: LP0, deck: deck, hand: [], mz: [], tz: [], gy: [], total: deck.length };
+    for (i = 0; i < NM; i++) p.mz.push(null); for (i = 0; i < NT; i++) p.tz.push(null);
+    for (i = 0; i < 5; i++) p.hand.push(p.deck.shift());
+    return p;
+  }
+  function log(G, s) { G.log.push(s); if (G.log.length > 60) G.log.shift(); }
+  function ev(G, o) { G.ev.push(o); }
+  function newGame(seed, first, deckP) {
+    seed = (seed | 0) || 1;
+    var G = { seed: seed, r: rng(seed), uid: 0, turnNo: 1, cur: 0, summoned: false, pending: null, winner: null, log: [], ev: [], ps: [] };
+    G.ps.push(mkP(G, deckP || DECK)); G.ps.push(mkP(G, DECK_B));
+    G.cur = first === 0 || first === 1 ? first : (G.r() < 0.5 ? 0 : 1);
+    log(G, 'الدور الأول للاعب ' + (G.cur === 0 ? 'أنت' : 'الخصم'));
+    return G;
+  }
+  function who(G, s) { return s === 0 ? 'أنت' : 'الخصم'; }
+  function chk(G) {
+    if (G.winner !== null) return;
+    var a = G.ps[0].lp <= 0, b = G.ps[1].lp <= 0;
+    if (a && b) G.winner = 'draw'; else if (a) G.winner = 1; else if (b) G.winner = 0;
+    if (G.winner !== null) log(G, G.winner === 'draw' ? 'تعادل' : 'فاز ' + who(G, G.winner));
+  }
+  function dmg(G, s, n) { var p = G.ps[s]; p.lp = Math.max(0, p.lp - n); ev(G, { k: 'lp', side: s, d: -n }); chk(G); }
+  function heal(G, s, n) { G.ps[s].lp += n; ev(G, { k: 'lp', side: s, d: n }); }
+  function toGy(G, s, c) { G.ps[s].gy.push(c); }
+  function destroy(G, s, f) { var m = G.ps[s].mz[f]; if (!m) return; G.ps[s].mz[f] = null; toGy(G, s, m.c); ev(G, { k: 'destroy', side: s, f: f }); log(G, 'تدمّر ' + cd(m.c).name); }
+  function draw(G, s, n) {
+    var p = G.ps[s], i;
+    for (i = 0; i < n; i++) {
+      if (!p.deck.length) { G.winner = 1 - s; log(G, who(G, s) + ' لا يملك بطاقات للسحب. فاز ' + who(G, 1 - s)); return false; }
+      p.hand.push(p.deck.shift());
+    }
+    return true;
+  }
+  function eAtk(m) { return cd(m.c).atk + m.bonus; }
+  function foes(G, s) { var o = [], p = G.ps[s]; p.mz.forEach(function (m, i) { if (m) o.push(i); }); return o; }
+  function startTurn(G) {
+    G.summoned = false; G.pending = null;
+    if (G.turnNo > 1) { if (!draw(G, G.cur, 1)) return; log(G, 'دور ' + who(G, G.cur) + ': سحب بطاقة'); }
+  }
+  function cardValue(c) { var d = cd(c); return d.t === 'm' ? d.atk + d.def * 0.5 : d.t === 's' ? 1500 : 1200; }
+  function endTurn(G) {
+    var p = G.ps[G.cur], i;
+    while (p.hand.length > HANDMAX) {
+      var mi = 0; for (i = 1; i < p.hand.length; i++) if (cardValue(p.hand[i]) < cardValue(p.hand[mi])) mi = i;
+      var dc = p.hand.splice(mi, 1)[0]; toGy(G, G.cur, dc); log(G, who(G, G.cur) + ' تخلّص من ' + cd(dc).name);
+    }
+    G.ps.forEach(function (q) { q.mz.forEach(function (m) { if (m) { m.atked = false; m.moved = false; m.nw = false; m.bonus = 0; } }); });
+    p.tz.forEach(function (t) { if (t) t.nw = false; });
+    G.cur = 1 - G.cur; G.turnNo++;
+    startTurn(G);
+  }
+  function resolveAttack(G, f, tgt) {
+    var s = G.cur, o = 1 - s, A = G.ps[s], D = G.ps[o], m = A.mz[f];
+    G.pending = null;
+    if (!m) return;
+    var an = cd(m.c).name;
+    ev(G, { k: 'atk', side: s, f: f, tgt: tgt });
+    if (tgt < 0) { log(G, an + ' يهاجم مباشرة: ' + eAtk(m)); dmg(G, o, eAtk(m)); return; }
+    var t = D.mz[tgt]; if (!t) return;
+    if (t.fd) { t.fd = false; ev(G, { k: 'flip', side: o, f: tgt }); log(G, 'انكشف ' + cd(t.c).name); }
+    var tn = cd(t.c).name;
+    if (t.pos === 'atk') {
+      var d = eAtk(m) - eAtk(t);
+      log(G, an + ' (' + eAtk(m) + ') يهاجم ' + tn + ' (' + eAtk(t) + ')');
+      if (d > 0) { destroy(G, o, tgt); dmg(G, o, d); }
+      else if (d < 0) { destroy(G, s, f); dmg(G, s, -d); }
+      else { destroy(G, o, tgt); destroy(G, s, f); }
+    } else {
+      var df = cd(t.c).def, d2 = eAtk(m) - df;
+      log(G, an + ' (' + eAtk(m) + ') يهاجم ' + tn + ' دفاع ' + df);
+      if (d2 > 0) destroy(G, o, tgt); else if (d2 < 0) dmg(G, s, -d2);
+    }
+  }
+  function ok() { return { ok: true }; }
+  function no(e) { return { ok: false, err: e }; }
+  function apply(G, side, a) {
+    if (G.winner !== null) return no('انتهت اللعبة');
+    G.ev = [];
+    if (G.pending) {
+      if (side !== G.pending.def) return no('بانتظار الخصم');
+      var pd = G.pending, D = G.ps[side];
+      if (a.t === 'pass') { resolveAttack(G, pd.f, pd.tgt); return ok(); }
+      if (a.t === 'trap') {
+        var tr = D.tz[a.i]; if (!tr || tr.nw) return no('لا يمكن تفعيل هذا الفخ');
+        var d = cd(tr.c); D.tz[a.i] = null; toGy(G, side, tr.c); ev(G, { k: 'trap', side: side, i: a.i });
+        log(G, who(G, side) + ' فعّل ' + d.name);
+        var A = G.ps[G.cur], m = A.mz[pd.f];
+        if (d.k === 'negate') { G.pending = null; log(G, 'أُبطل الهجوم'); return ok(); }
+        if (d.k === 'destroyAtk') { G.pending = null; destroy(G, G.cur, pd.f); return ok(); }
+        if (d.k === 'thorn') { dmg(G, G.cur, d.v); if (G.winner !== null) { G.pending = null; return ok(); } resolveAttack(G, pd.f, pd.tgt); return ok(); }
+        return ok();
+      }
+      return no('اختر فخاً أو تجاوز');
+    }
+    if (side !== G.cur) return no('ليس دورك');
+    var P = G.ps[side], O = G.ps[1 - side], i;
+    switch (a.t) {
+      case 'end': endTurn(G); return ok();
+      case 'summon': {
+        var c = P.hand[a.i]; if (!c || cd(c).t !== 'm') return no('بطاقة غير صالحة');
+        if (G.summoned) return no('استدعاء واحد فقط في الدور');
+        var n = need(c), trib = a.trib || [];
+        if (trib.length !== n) return no('يلزم ' + n + ' قربان');
+        for (i = 0; i < trib.length; i++) { if (!P.mz[trib[i]] || trib.indexOf(trib[i]) !== i) return no('قربان غير صالح'); }
+        var slot = -1;
+        trib.forEach(function (f) { toGy(G, side, P.mz[f].c); ev(G, { k: 'destroy', side: side, f: f }); P.mz[f] = null; });
+        for (i = 0; i < NM; i++) if (!P.mz[i]) { slot = i; break; }
+        if (slot < 0) return no('لا توجد خانة فارغة');
+        var set = a.pos === 'set'; P.hand.splice(a.i, 1);
+        P.mz[slot] = { c: c, pos: set ? 'def' : 'atk', fd: set, bonus: 0, atked: false, moved: false, nw: true };
+        G.summoned = true; ev(G, { k: 'sum', side: side, f: slot });
+        log(G, who(G, side) + (set ? ' وضع وحشاً مقلوباً' : ' استدعى ' + cd(c).name + ' (' + cd(c).atk + ')')); return ok();
+      }
+      case 'setTrap': {
+        var tc = P.hand[a.i]; if (!tc || cd(tc).t !== 't') return no('ليست فخاً');
+        var ts = -1; for (i = 0; i < NT; i++) if (!P.tz[i]) { ts = i; break; }
+        if (ts < 0) return no('خانات الفخاخ ممتلئة');
+        P.hand.splice(a.i, 1); P.tz[ts] = { c: tc, nw: true }; log(G, who(G, side) + ' وضع فخاً'); return ok();
+      }
+      case 'spell': {
+        var sc = P.hand[a.i]; if (!sc || cd(sc).t !== 's') return no('ليست سحراً');
+        var sd = cd(sc), k = sd.k;
+        if (k === 'destroy') { if (!O.mz[a.tgt]) return no('اختر وحشاً للخصم'); }
+        if (k === 'boost') { if (!P.mz[a.tgt] || P.mz[a.tgt].fd) return no('اختر وحشاً مكشوفاً لك'); }
+        if (k === 'revive') { if (!P.gy.some(function (x) { return cd(x).t === 'm'; })) return no('لا وحوش في المقبرة'); }
+        P.hand.splice(a.i, 1); toGy(G, side, sc); log(G, who(G, side) + ' استخدم ' + sd.name); ev(G, { k: 'spell', side: side });
+        if (k === 'heal') heal(G, side, sd.v);
+        else if (k === 'burn') dmg(G, 1 - side, sd.v);
+        else if (k === 'destroy') destroy(G, 1 - side, a.tgt);
+        else if (k === 'boost') P.mz[a.tgt].bonus += sd.v;
+        else if (k === 'draw') draw(G, side, sd.v);
+        else if (k === 'revive') {
+          var bi = -1, bv = -1; P.gy.forEach(function (x, j) { if (cd(x).t === 'm' && cd(x).atk > bv) { bv = cd(x).atk; bi = j; } });
+          P.hand.push(P.gy.splice(bi, 1)[0]);
+        }
+        return ok();
+      }
+      case 'pos': {
+        var pm = P.mz[a.f]; if (!pm) return no('لا وحش'); if (pm.nw || pm.moved || pm.atked) return no('لا يمكن تغيير الوضع الآن');
+        if (pm.fd) { pm.fd = false; pm.pos = 'atk'; } else pm.pos = pm.pos === 'atk' ? 'def' : 'atk';
+        pm.moved = true; ev(G, { k: 'flip', side: side, f: a.f }); return ok();
+      }
+      case 'attack': {
+        if (G.turnNo === 1) return no('لا هجوم في الدور الأول');
+        var am = P.mz[a.f]; if (!am || am.fd || am.pos !== 'atk') return no('الوحش لا يستطيع الهجوم');
+        if (am.atked) return no('هاجم هذا الدور');
+        var oc = foes(G, 1 - side);
+        if (a.tgt < 0) { if (oc.length) return no('يوجد وحوش للخصم'); }
+        else if (!O.mz[a.tgt]) return no('الهدف غير موجود');
+        am.atked = true;
+        var elig = []; O.tz.forEach(function (t, j) { if (t && !t.nw) elig.push(j); });
+        if (elig.length) { G.pending = { def: 1 - side, f: a.f, tgt: a.tgt, opts: elig }; return ok(); }
+        resolveAttack(G, a.f, a.tgt); return ok();
+      }
+    }
+    return no('إجراء غير معروف');
+  }
+  // ---- views (hide hidden information)
+  function mview(m, hide) { if (!m) return null; if (m.fd && hide) return { fd: true, pos: 'def' }; return { c: { id: m.c.id, uid: m.c.uid }, pos: m.pos, fd: m.fd, bonus: m.bonus, atked: m.atked, moved: m.moved, nw: m.nw }; }
+  function view(G, side) {
+    var me = G.ps[side], op = G.ps[1 - side];
+    return {
+      side: side, cur: G.cur, turnNo: G.turnNo, summoned: G.summoned, winner: G.winner, log: G.log.slice(-6), ev: G.ev,
+      me: { lp: me.lp, hand: me.hand.map(function (c) { return { id: c.id, uid: c.uid }; }), deckN: me.deck.length, mz: me.mz.map(function (m) { return mview(m, false); }), tz: me.tz.map(function (t) { return t ? { c: { id: t.c.id, uid: t.c.uid }, nw: t.nw } : null; }), gy: me.gy.map(function (c) { return { id: c.id, uid: c.uid }; }) },
+      op: { lp: op.lp, handN: op.hand.length, deckN: op.deck.length, mz: op.mz.map(function (m) { return mview(m, true); }), tz: op.tz.map(function (t) { return t ? { fd: true } : null; }), gy: op.gy.map(function (c) { return { id: c.id, uid: c.uid }; }) },
+      pending: G.pending ? (G.pending.def === side ? { def: true, f: G.pending.f, tgt: G.pending.tgt, opts: G.pending.opts.slice(), atkCard: { id: G.ps[1 - side].mz[G.pending.f].c.id, atk: eAtk(G.ps[1 - side].mz[G.pending.f]) } } : { def: false }) : null
+    };
+  }
+  // ---- computer player: returns one action
+  function bestOpp(G, s) { var o = G.ps[1 - s], b = 0; o.mz.forEach(function (m) { if (m) b = Math.max(b, m.fd ? 1800 : (m.pos === 'atk' ? eAtk(m) : cd(m.c).def)); }); return b; }
+  function ai(G, s) {
+    var P = G.ps[s], O = G.ps[1 - s], i;
+    if (G.pending) { if (G.pending.def !== s) return null; var op = G.pending.opts; return op.length ? { t: 'trap', i: op[0] } : { t: 'pass' }; }
+    if (G.cur !== s) return null;
+    var myBest = 0; P.mz.forEach(function (m) { if (m && !m.fd) myBest = Math.max(myBest, m.pos === 'atk' ? eAtk(m) : cd(m.c).def); });
+    var oppN = foes(G, 1 - s), meN = foes(G, s);
+    // spells
+    for (i = 0; i < P.hand.length; i++) {
+      var d = cd(P.hand[i]); if (d.t !== 's') continue;
+      if (d.k === 'heal' && P.lp <= 6500) return { t: 'spell', i: i };
+      if (d.k === 'burn') return { t: 'spell', i: i };
+      if (d.k === 'draw' && P.deck.length > 5) return { t: 'spell', i: i };
+      if (d.k === 'revive' && P.gy.some(function (x) { return cd(x).t === 'm'; }) && P.hand.length < 6) return { t: 'spell', i: i };
+      if (d.k === 'destroy' && oppN.length) {
+        var tg = oppN[0], tv = -1; oppN.forEach(function (f) { var m = O.mz[f], v = m.fd ? 1800 : cd(m.c).atk; if (v > tv) { tv = v; tg = f; } });
+        if (tv >= 1500) return { t: 'spell', i: i, tgt: tg };
+      }
+      if (d.k === 'boost' && G.turnNo > 1) {
+        var bt = -1, bw = 0; meN.forEach(function (f) { var m = P.mz[f]; if (m.fd || m.pos !== 'atk' || m.atked) return; if (eAtk(m) > bw) { bw = eAtk(m); bt = f; } });
+        if (bt >= 0 && oppN.length && bw <= bestOpp(G, s) && bw + d.v > bestOpp(G, s)) return { t: 'spell', i: i, tgt: bt };
+      }
+    }
+    // traps
+    for (i = 0; i < P.hand.length; i++) if (cd(P.hand[i]).t === 't' && P.tz.some(function (z) { return !z; })) return { t: 'setTrap', i: i };
+    // summon
+    if (!G.summoned) {
+      var best = null, bv = -1, bi;
+      for (i = 0; i < P.hand.length; i++) {
+        var hd = cd(P.hand[i]); if (hd.t !== 'm') continue;
+        var n = need(P.hand[i]), tr = [];
+        if (n > meN.length) continue;
+        if (n === 0 && meN.length >= NM) continue;
+        var ord = meN.slice().sort(function (a, b) { return eAtk(P.mz[a]) - eAtk(P.mz[b]); }); tr = ord.slice(0, n);
+        var lost = 0; tr.forEach(function (f) { lost += eAtk(P.mz[f]); });
+        if (n > 0 && hd.atk < lost + 700) continue;
+        if (hd.atk - lost > bv) { bv = hd.atk - lost; best = { i: i, trib: tr, d: hd }; }
+      }
+      if (best) {
+        var opB = bestOpp(G, s), pos = (best.d.atk >= opB || oppN.length === 0) ? 'atk' : (best.d.def >= opB || best.d.def > best.d.atk ? 'set' : 'atk');
+        return { t: 'summon', i: best.i, pos: pos, trib: best.trib };
+      }
+    }
+    // flip / position
+    if (G.turnNo > 1 || true) for (i = 0; i < NM; i++) { var fm = P.mz[i]; if (fm && !fm.nw && !fm.moved && !fm.atked) { if (fm.pos === 'def' && cd(fm.c).atk >= bestOpp(G, s) + 100 && cd(fm.c).atk > cd(fm.c).def) return { t: 'pos', f: i }; } }
+    // attacks
+    if (G.turnNo > 1) {
+      for (i = 0; i < NM; i++) {
+        var am = P.mz[i]; if (!am || am.fd || am.pos !== 'atk' || am.atked) continue;
+        if (!oppN.length) return { t: 'attack', f: i, tgt: -1 };
+        var bt = -1, bs = -1e9;
+        oppN.forEach(function (f) {
+          var t = O.mz[f], sc;
+          if (t.fd) sc = eAtk(am) >= 2000 ? 300 : -1;
+          else if (t.pos === 'atk') sc = eAtk(am) > eAtk(t) ? 1000 + eAtk(t) + (eAtk(am) - eAtk(t)) : (eAtk(am) === eAtk(t) && cd(t.c).atk >= 2000 && P.lp > 3000 ? 200 : -1);
+          else sc = eAtk(am) > cd(t.c).def ? 600 + cd(t.c).atk : -1;
+          if (sc > bs) { bs = sc; bt = f; }
+        });
+        if (bt >= 0 && bs > 0) return { t: 'attack', f: i, tgt: bt };
+      }
+    }
+    return { t: 'end' };
+  }
+  // ---- self test
+  function check(G) {
+    G.ps.forEach(function (p, s) {
+      var n = p.deck.length + p.hand.length + p.gy.length + p.mz.filter(Boolean).length + p.tz.filter(Boolean).length;
+      if (n !== p.total) throw new Error('card count ' + s + ' = ' + n + ' vs ' + p.total);
+      if (p.lp < 0 || isNaN(p.lp)) throw new Error('bad lp');
+    });
+  }
+  function selfTest(games, seed0) {
+    var res = { games: 0, w0: 0, w1: 0, draw: 0, deckOut: 0, maxTurns: 0, avgTurns: 0, illegal: 0, trapUses: 0 }, g, tot = 0;
+    for (g = 0; g < games; g++) {
+      var G = newGame((seed0 || 1) + g); startTurn(G); var steps = 0;
+      while (G.winner === null && steps < 4000) {
+        var s = G.pending ? G.pending.def : G.cur, a = ai(G, s), r = apply(G, s, a);
+        if (a.t === 'trap') res.trapUses++;
+        if (!r.ok) { res.illegal++; if (res.illegal < 4) res.lastIllegal = JSON.stringify(a) + ' ' + r.err; apply(G, s, G.pending ? { t: 'pass' } : { t: 'end' }); }
+        check(G); steps++;
+      }
+      if (G.winner === null) throw new Error('game ' + g + ' did not finish');
+      res.games++; if (G.winner === 0) res.w0++; else if (G.winner === 1) res.w1++; else res.draw++;
+      if (G.ps[0].deck.length === 0 || G.ps[1].deck.length === 0) res.deckOut++;
+      res.maxTurns = Math.max(res.maxTurns, G.turnNo); tot += G.turnNo;
+    }
+    res.avgTurns = tot / games; return res;
+  }
+  function fuzz(games, seed0) {
+    var bad = 0, g, i, k, errs = 0;
+    for (g = 0; g < games; g++) {
+      var r = rng(777 + g), G = newGame((seed0 || 1) + g); startTurn(G);
+      for (k = 0; k < 600 && G.winner === null; k++) {
+        var s = G.pending ? G.pending.def : (r() < 0.9 ? G.cur : 1 - G.cur);
+        var types = ['summon', 'setTrap', 'spell', 'pos', 'attack', 'end', 'trap', 'pass'], t = types[Math.floor(r() * types.length)];
+        var a = { t: t, i: Math.floor(r() * 8), f: Math.floor(r() * 6), tgt: Math.floor(r() * 7) - 1, pos: r() < 0.5 ? 'atk' : 'set', trib: r() < 0.5 ? [] : [Math.floor(r() * 5)] };
+        if (r() < 0.4) a = ai(G, s) || a;
+        try { apply(G, s, a); check(G); } catch (e) { errs++; if (errs < 3) bad = String(e.stack || e); }
+      }
+    }
+    return { errs: errs, first: bad };
+  }
+  function price(id) { var d = CARDS[id]; if (d.t === 's') return 200; if (d.t === 't') return 250; return d.lv <= 4 ? 100 : d.lv <= 6 ? 300 : d.lv === 7 ? 1500 : 2500; }
+  var STARTER = {}; ORDER.forEach(function (id) { var d = CARDS[id]; if (d.t !== 'm' || d.lv <= 6) STARTER[id] = 2; });
+  var PDECK = DECK.filter(function (e) { return e[0] !== 'm20' && e[0] !== 'm21'; }).concat([['m19', 2]]);
+  return { price: price, STARTER: STARTER, PDECK: PDECK, CARDS: CARDS, ORDER: ORDER, newGame: newGame, startTurn: startTurn, apply: apply, view: view, ai: ai, need: need, selfTest: selfTest, fuzz: fuzz, NM: NM, NT: NT, eAtk: eAtk };
+})();
+
+
+</script>
+<script id="ui">
+(function () {
+'use strict';
+var BUILD = 'c1-001', Q = new URLSearchParams(location.search), NOSAVE = Q.get('nosave') === '1', QA = Q.get('qa') === '1', AUTO = Q.get('auto') === '1';
+var C = CG.CARDS, $ = function (id) { return document.getElementById(id); };
+var errs = []; window.addEventListener('error', function (e) { errs.push(e.message); });
+// ---- save
+var META = { coins: 500, owned: {}, deck: [] }, SKEY = 'cg_save', store = NOSAVE ? 'nosave' : 'ls';
+function save() { if (NOSAVE) return; try { localStorage.setItem(SKEY, JSON.stringify(META)); } catch (e) { store = 'mem'; } }
+function deckList() { var l = []; Object.keys(META.deck).forEach(function (id) { l.push([id, META.deck[id]]); }); return l; }
+function deckCount(d) { var n = 0; Object.keys(d).forEach(function (k) { n += d[k]; }); return n; }
+function autoDeck() { var d = {}; CG.PDECK.forEach(function (e) { d[e[0]] = e[1]; }); META.deck = d; fixDeck(); }
+function fixDeck() {
+  var d = META.deck, ok = d && typeof d === 'object', n = 0;
+  if (ok) Object.keys(d).forEach(function (k) { if (!C[k] || (META.owned[k] || 0) < d[k] || d[k] > 3) ok = false; });
+  if (ok && deckCount(d) !== 40) ok = false;
+  if (!ok) {
+    var o = {}, tot = 0, ids = CG.ORDER.filter(function (k) { return META.owned[k]; });
+    CG.PDECK.forEach(function (e) { var c = Math.min(e[1], META.owned[e[0]] || 0); if (c) { o[e[0]] = c; tot += c; } });
+    var g = 0; while (tot < 40 && g++ < 500) { var id = ids[g % ids.length]; if ((o[id] || 0) < Math.min(3, META.owned[id])) { o[id] = (o[id] || 0) + 1; tot++; } }
+    while (tot > 40) { var k2 = Object.keys(o)[0]; o[k2]--; tot--; if (!o[k2]) delete o[k2]; }
+    META.deck = o;
+  }
+}
+function load() {
+  if (!NOSAVE) { try { var s = localStorage.getItem(SKEY); if (s) { var m = JSON.parse(s); if (m && typeof m.coins === 'number' && m.owned) META = m; } } catch (e) { store = 'mem'; } }
+  if (!META.owned || !Object.keys(META.owned).length) { META.owned = {}; Object.keys(CG.STARTER).forEach(function (k) { META.owned[k] = CG.STARTER[k]; }); META.coins = META.coins || 500; META.deck = {}; }
+  if (!META.deck || Array.isArray(META.deck)) META.deck = {};
+  fixDeck(); save();
+}
+load();
+// ---- helpers
+var G = null, V = null, sel = null, mode = null, running = false, timer = null, lastLp = [8000, 8000], seed0 = parseInt(Q.get('seed'), 10) || 0, gameNo = 0;
+function show(id) { ['menu', 'duel', 'shop', 'deckb'].forEach(function (k) { $(k).classList.toggle('on', k === id); }); if (id === 'menu') $('mcoins').textContent = META.coins; }
+function esc(s) { return String(s).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
+function cardH(c, o) {
+  o = o || {}; var d = C[c.id], cls = 'card t-' + d.t + (d.t === 'm' ? ' A-' + d.attr : '') + (o.cls ? ' ' + o.cls : '');
+  var st = d.t === 'm' ? '<div class="lv">' + '★'.repeat(Math.min(d.lv, 8)) + '</div><div class="st"><span>' + (CG.eAtk && o.m ? CG.eAtk(o.m) : d.atk) + '</span><span>' + d.def + '</span></div>' : '<div class="st" style="justify-content:center">' + (d.t === 's' ? 'سحر' : 'فخ') + '</div>';
+  return '<div class="' + cls + '" ' + (o.data || '') + '><div class="n">' + esc(d.name) + '</div><div class="e">' + d.emo + '</div>' + st + '</div>';
+}
+function backH(o) { o = o || {}; return '<div class="card back ' + (o.cls || '') + '" ' + (o.data || '') + '></div>'; }
+function mzH(m, k, i, hl, sl) {
+  var h = '<div class="slot' + (hl ? ' hl' : '') + (sl ? ' sel' : '') + '" data-k="' + k + '" data-i="' + i + '">';
+  if (m) h += m.fd && !m.c ? backH({ cls: 'def' }) : cardH(m.c, { cls: m.pos === 'def' ? (m.fd ? 'back def' : 'def') : '', m: m });
+  return h + '</div>';
+}
+function tzH(t, k, i, mine) {
+  var h = '<div class="slot tz" data-k="' + k + '" data-i="' + i + '">';
+  if (t) h += mine && t.c ? '<div class="card small t-t" style="background:linear-gradient(160deg,#a02a8c,#4a1050)"><div class="n">' + esc(C[t.c.id].name) + '</div></div>' : '<div class="card small back"></div>';
+  return h + '</div>';
+}
+function myTurn() { return V && V.cur === 0 && !V.pending && V.winner === null && !AUTO; }
+// ---- render
+function render() {
+  V = CG.view(G, 0);
+  var o = V.op, m = V.me, hl = mode && mode.hl || {};
+  $('oinfo').innerHTML = '<span>🤖 الخصم</span><span>يد ' + o.handN + ' · دك ' + o.deckN + ' · مقبرة ' + o.gy.length + '</span><span class="lp" id="olp">' + o.lp + '</span>';
+  $('minfo').innerHTML = '<span>👤 أنت</span><span>دك ' + m.deckN + ' · مقبرة ' + m.gy.length + '</span><span class="lp" id="mlp">' + m.lp + '</span>';
+  var h = '', i;
+  for (i = 0; i < CG.NT; i++) h += tzH(o.tz[i], 'otz', i, false); $('otz').innerHTML = h;
+  h = ''; for (i = 0; i < CG.NM; i++) h += mzH(o.mz[i], 'omz', i, hl.omz && hl.omz.indexOf(i) >= 0, false); $('omz').innerHTML = h;
+  h = ''; for (i = 0; i < CG.NM; i++) h += mzH(m.mz[i], 'mmz', i, hl.mmz && hl.mmz.indexOf(i) >= 0, mode && mode.picked && mode.picked.indexOf(i) >= 0); $('mmz').innerHTML = h;
+  h = ''; for (i = 0; i < CG.NT; i++) h += tzH(m.tz[i], 'mtz', i, true); $('mtz').innerHTML = h;
+  h = ''; m.hand.forEach(function (c, j) { h += cardH(c, { data: 'data-k="hand" data-i="' + j + '"', cls: (sel && sel.k === 'hand' && sel.i === j ? 'sel ' : '') + (myTurn() ? '' : 'off') }); }); $('hand').innerHTML = h;
+  $('log').innerHTML = V.log.slice(-3).map(esc).join('<br>');
+  $('turn').textContent = V.winner !== null ? '' : (V.cur === 0 ? 'دورك' : 'دور الخصم') + ' #' + V.turnNo;
+  $('bEnd').disabled = !myTurn();
+  $('modebar').classList.toggle('on', !!mode); if (mode) { $('modetxt').textContent = mode.txt; $('modeOk').style.display = mode.confirm ? '' : 'none'; $('modeOk').disabled = !(mode.confirm && mode.picked && mode.picked.length === mode.n); }
+  tweenLp('olp', 1, o.lp); tweenLp('mlp', 0, m.lp);
+  (V.ev || []).forEach(function (e) { if (e.k === 'destroy' || e.k === 'atk') flashEv(e); });
+  if (V.pending && V.pending.def && !AUTO) showTrap(); else $('trapOv').classList.remove('on');
+  if (V.winner !== null) showEnd();
+  if (QA) $('qa').textContent = 'build ' + BUILD + ' turn ' + V.turnNo + ' cur ' + V.cur + ' lp ' + m.lp + '/' + o.lp + ' hand ' + m.hand.length + ' pend ' + (V.pending ? 1 : 0) + ' coins ' + META.coins + ' store ' + store + ' winner ' + V.winner + ' errs ' + errs.length + (errs.length ? ' ' + errs[0] : '');
+}
+function tweenLp(id, side, to) {
+  var el = $(id), from = lastLp[side]; lastLp[side] = to; if (from === to) { el.textContent = to; return; }
+  el.classList.add('f'); var t0 = performance.now(); (function s() { var u = Math.min(1, (performance.now() - t0) / 500); el.textContent = Math.round(from + (to - from) * u); if (u < 1) requestAnimationFrame(s); else el.classList.remove('f'); })();
+}
+function flashEv(e) {
+  var k = e.k === 'atk' ? (e.side === 0 ? 'mmz' : 'omz') : (e.side === 0 ? 'mmz' : 'omz'), idx = e.k === 'atk' ? e.f : e.f;
+  var el = document.querySelector('#' + k + ' .slot[data-i="' + idx + '"] .card'); if (el) { el.classList.remove('hit'); void el.offsetWidth; el.classList.add('hit'); }
+}
+// ---- sheet
+function closeSheet() { $('sheetOv').classList.remove('on'); sel = null; }
+function openSheet(c, m, btns, extra) {
+  var d = C[c.id], sub = d.t === 'm' ? 'وحش · مستوى ' + d.lv + ' · ' + d.attr + '<br>هجوم ' + (m ? CG.eAtk(m) : d.atk) + ' / دفاع ' + d.def + (CG.need(c) ? '<br>قرابين: ' + CG.need(c) : '') : (d.t === 's' ? 'سحر' : 'فخ');
+  var t = d.t === 'm' ? d.text : d.text;
+  $('sheet').innerHTML = '<div class="big">' + cardH(c, { m: m }) + '</div><div class="txt"><h3>' + esc(d.name) + '</h3>' + sub + '<br>' + esc(t) + (extra || '') + '<div class="btns" id="sbtns"></div></div>';
+  var bb = $('sbtns'); btns.concat([{ t: 'إغلاق', f: closeSheet }]).forEach(function (b) { var e = document.createElement('button'); e.textContent = b.t; if (b.pri) e.className = 'pri'; e.onclick = b.f; bb.appendChild(e); });
+  $('sheetOv').classList.add('on');
+}
+function act(a) {
+  var r = CG.apply(G, 0, a); if (!r.ok) { flashMsg(r.err); return r; }
+  mode = null; closeSheet(); render(); kick(); return r;
+}
+function flashMsg(t) { $('log').innerHTML = '<b style="color:#ff8">' + esc(t) + '</b>'; }
+function cancelMode() { mode = null; render(); }
+// ---- clicks
+function onHand(i) {
+  var c = V.me.hand[i], d = C[c.id], b = [];
+  if (myTurn()) {
+    if (d.t === 'm' && !V.summoned) {
+      var n = CG.need(c);
+      var go = function (pos) { closeSheet(); if (n === 0) act({ t: 'summon', i: i, pos: pos, trib: [] }); else startTribute(i, pos, n); };
+      b.push({ t: n ? 'استدعاء هجوم (قرابين ' + n + ')' : 'استدعاء في وضع الهجوم', f: function () { go('atk'); }, pri: true });
+      b.push({ t: 'وضع مقلوب (دفاع)', f: function () { go('set'); } });
+    } else if (d.t === 'm') b.push({ t: 'استدعيت هذا الدور', f: function () { } });
+    if (d.t === 't') b.push({ t: 'ضع الفخ', f: function () { act({ t: 'setTrap', i: i }); }, pri: true });
+    if (d.t === 's') b.push({ t: 'استخدم', pri: true, f: function () { useSpell(i, d); } });
+  }
+  sel = { k: 'hand', i: i }; openSheet(c, null, b);
+}
+function startTribute(i, pos, n) {
+  var mine = []; V.me.mz.forEach(function (m, f) { if (m) mine.push(f); });
+  if (mine.length < n) { flashMsg('لا تملك قرابين كافية'); return; }
+  mode = { type: 'trib', txt: 'اختر ' + n + ' وحش للتضحية', n: n, confirm: true, picked: [], hl: { mmz: mine }, i: i, pos: pos }; render();
+}
+function useSpell(i, d) {
+  closeSheet();
+  if (d.k === 'destroy') { var t = []; V.op.mz.forEach(function (m, f) { if (m) t.push(f); }); if (!t.length) return flashMsg('لا وحوش عند الخصم'); mode = { type: 'sp', txt: 'اختر وحش الخصم لتدميره', hl: { omz: t }, i: i }; render(); }
+  else if (d.k === 'boost') { var u = []; V.me.mz.forEach(function (m, f) { if (m && !m.fd) u.push(f); }); if (!u.length) return flashMsg('لا وحوش مكشوفة'); mode = { type: 'sp', txt: 'اختر وحشك لتقويته', hl: { mmz: u }, i: i }; render(); }
+  else act({ t: 'spell', i: i });
+}
+function onMz(k, i) {
+  if (mode) {
+    if (mode.type === 'trib' && k === 'mmz' && V.me.mz[i]) { var p = mode.picked, x = p.indexOf(i); if (x >= 0) p.splice(x, 1); else if (p.length < mode.n) p.push(i); render(); return; }
+    if (mode.type === 'sp' && k === 'omz' && mode.hl.omz) { act({ t: 'spell', i: mode.i, tgt: i }); return; }
+    if (mode.type === 'sp' && k === 'mmz' && mode.hl.mmz) { act({ t: 'spell', i: mode.i, tgt: i }); return; }
+    if (mode.type === 'atk' && k === 'omz' && V.op.mz[i]) { act({ t: 'attack', f: mode.f, tgt: i }); return; }
+    return;
+  }
+  var m = (k === 'mmz' ? V.me : V.op).mz[i]; if (!m) return;
+  if (m.fd && !m.c) { return flashMsg('وحش مقلوب'); }
+  var b = [];
+  if (k === 'mmz' && myTurn()) {
+    var canAtk = !m.fd && m.pos === 'atk' && !m.atked && V.turnNo > 1;
+    if (canAtk) b.push({ t: 'هجوم', pri: true, f: function () { closeSheet(); var tg = []; V.op.mz.forEach(function (z, f) { if (z) tg.push(f); }); if (!tg.length) act({ t: 'attack', f: i, tgt: -1 }); else { mode = { type: 'atk', txt: 'اختر هدف الهجوم', hl: { omz: tg }, f: i }; render(); } } });
+    if (V.turnNo === 1 && m.pos === 'atk' && !m.fd) b.push({ t: 'لا هجوم في الدور الأول', f: function () { } });
+    if (!m.nw && !m.moved && !m.atked) b.push({ t: m.fd ? 'اكشف (هجوم)' : (m.pos === 'atk' ? 'غيّر إلى دفاع' : 'غيّر إلى هجوم'), f: function () { act({ t: 'pos', f: i }); } });
+  }
+  openSheet(m.c, m, b, m.fd ? '<br>(مقلوب)' : '');
+}
+document.addEventListener('click', function (e) {
+  var t = e.target.closest('[data-k]'); if (!t || !$('duel').classList.contains('on') || !V) return;
+  var k = t.getAttribute('data-k'), i = parseInt(t.getAttribute('data-i'), 10);
+  if (k === 'hand') onHand(i); else if (k === 'mmz' || k === 'omz') onMz(k, i);
+  else if (k === 'mtz') { var tr = V.me.tz[i]; if (tr) openSheet(tr.c, null, []); }
+});
+$('modeX').onclick = cancelMode;
+$('modeOk').onclick = function () { if (mode && mode.type === 'trib') act({ t: 'summon', i: mode.i, pos: mode.pos, trib: mode.picked.slice() }); };
+$('bEnd').onclick = function () { if (myTurn()) { mode = null; act({ t: 'end' }); } };
+$('sheetOv').onclick = function (e) { if (e.target === $('sheetOv')) closeSheet(); };
+// ---- trap window
+function showTrap() {
+  var p = V.pending, h = '<h3>الخصم يهاجم!</h3><div>' + esc(C[p.atkCard.id].name) + ' (هجوم ' + p.atkCard.atk + ')</div><div>هل تفعّل فخاً؟</div><div class="row" style="margin:8px 0">';
+  p.opts.forEach(function (i) { h += cardH(V.me.tz[i].c, { data: 'data-trap="' + i + '"' }); });
+  h += '</div><button id="trapNo" class="warn">لا، تجاهل</button>';
+  $('trapSheet').innerHTML = h; $('trapOv').classList.add('on');
+  $('trapNo').onclick = function () { $('trapOv').classList.remove('on'); act({ t: 'pass' }); };
+  Array.prototype.forEach.call($('trapSheet').querySelectorAll('[data-trap]'), function (el) { el.onclick = function () { $('trapOv').classList.remove('on'); act({ t: 'trap', i: parseInt(el.getAttribute('data-trap'), 10) }); }; });
+}
+// ---- AI runner
+function kick() { if (running) return; running = true; step(); }
+function step() {
+  clearTimeout(timer);
+  if (!G || G.winner !== null) { running = false; render(); return; }
+  var s = G.pending ? G.pending.def : G.cur;
+  if (s === 0 && !AUTO) { running = false; render(); return; }
+  timer = setTimeout(function () {
+    var a = CG.ai(G, s), r = CG.apply(G, s, a);
+    if (!r.ok) CG.apply(G, s, G.pending ? { t: 'pass' } : { t: 'end' });
+    render(); step();
+  }, AUTO ? 150 : 750);
+}
+// ---- game flow
+var rewarded = false;
+function startGame() {
+  gameNo++; rewarded = false; mode = null; sel = null; lastLp = [8000, 8000];
+  var dl = deckList(); G = CG.newGame(seed0 ? seed0 + gameNo - 1 : (Math.random() * 1e9) | 0, undefined, dl);
+  CG.startTurn(G); show('duel'); $('end').classList.remove('on'); render(); kick();
+}
+function showEnd() {
+  if (!rewarded) { rewarded = true; var w = V.winner === 0, add = w ? 300 : V.winner === 'draw' ? 150 : 100; META.coins += add; save(); V.reward = add; }
+  var w2 = V.winner;
+  $('endBody').innerHTML = '<h2>' + (w2 === 0 ? '🏆 فزت!' : w2 === 'draw' ? 'تعادل' : '💀 خسرت') + '</h2><div>مكافأتك: 🪙 ' + (w2 === 0 ? 300 : w2 === 'draw' ? 150 : 100) + ' عملة</div><div class="coins">رصيدك: ' + META.coins + '</div><div class="btns" style="display:flex;flex-direction:column;gap:6px;margin-top:10px"><button class="pri" id="again">العب مرة أخرى</button><button id="toShop">المتجر</button><button id="toMenu">القائمة</button></div>';
+  $('end').classList.add('on');
+  $('again').onclick = startGame; $('toShop').onclick = function () { $('end').classList.remove('on'); openShop(); }; $('toMenu').onclick = function () { $('end').classList.remove('on'); show('menu'); };
+}
+// ---- shop and deck
+function openShop() {
+  show('shop'); $('scoins').textContent = META.coins; var h = '';
+  CG.ORDER.forEach(function (id) {
+    var d = C[id], own = META.owned[id] || 0, p = CG.price(id), lock = !own && d.t === 'm' && d.lv >= 7;
+    h += '<div class="item' + (lock ? ' lock' : '') + '">' + cardH({ id: id }) + '<div class="meta"><b>' + (lock ? '🔒 ' : '') + esc(d.name) + '</b><br>' + (d.t === 'm' ? 'م' + d.lv + ' · ' + d.atk + '/' + d.def : d.t === 's' ? 'سحر' : 'فخ') + '<br>تملك: ' + own + '</div><button class="pri cntb" data-buy="' + id + '"' + (META.coins < p ? ' disabled' : '') + '>🪙 ' + p + '</button></div>';
+  });
+  $('shopGrid').innerHTML = h;
+  Array.prototype.forEach.call($('shopGrid').querySelectorAll('[data-buy]'), function (b) { b.onclick = function () { buy(b.getAttribute('data-buy')); }; });
+}
+function buy(id) {
+  var p = CG.price(id); if (META.coins < p) return;
+  if (!confirm('شراء ' + C[id].name + ' بـ ' + p + ' عملة؟')) return;
+  META.coins -= p; META.owned[id] = (META.owned[id] || 0) + 1; save(); openShop();
+}
+function openDeck() {
+  show('deckb'); var h = '', ids = CG.ORDER;
+  ids.forEach(function (id) {
+    var own = META.owned[id] || 0, d = C[id], n = META.deck[id] || 0;
+    if (!own) { h += '<div class="item lock">' + cardH({ id: id }) + '<div class="meta"><b>🔒 ' + esc(d.name) + '</b><br>مقفلة. اشترها من المتجر</div></div>'; return; }
+    h += '<div class="item">' + cardH({ id: id }) + '<div class="meta"><b>' + esc(d.name) + '</b><br>تملك: ' + own + '</div><div class="cnt"><button class="cntb" data-p="' + id + '">+</button><b>' + n + '</b><button class="cntb" data-m="' + id + '">−</button></div></div>';
+  });
+  $('deckGrid').innerHTML = h; $('deckN').textContent = deckCount(META.deck);
+  $('deckN').style.color = deckCount(META.deck) === 40 ? '#7f7' : '#ff8';
+  Array.prototype.forEach.call($('deckGrid').querySelectorAll('[data-p]'), function (b) { b.onclick = function () { var id = b.getAttribute('data-p'), n = META.deck[id] || 0; if (n < Math.min(3, META.owned[id]) && deckCount(META.deck) < 40) { META.deck[id] = n + 1; save(); openDeck(); } }; });
+  Array.prototype.forEach.call($('deckGrid').querySelectorAll('[data-m]'), function (b) { b.onclick = function () { var id = b.getAttribute('data-m'), n = META.deck[id] || 0; if (n > 0) { META.deck[id] = n - 1; if (!META.deck[id]) delete META.deck[id]; save(); openDeck(); } }; });
+}
+$('bAI').onclick = function () { if (deckCount(META.deck) !== 40) { openDeck(); return; } startGame(); };
+$('bDeck').onclick = openDeck; $('bShop').onclick = openShop;
+$('deckBack').onclick = function () { if (deckCount(META.deck) !== 40) { alert('الدك لازم يكون 40 بطاقة بالضبط'); return; } show('menu'); };
+$('shopBack').onclick = function () { show('menu'); };
+$('deckAuto').onclick = function () { META.deck = {}; fixDeck(); save(); openDeck(); };
+$('bRules').onclick = function () {
+  $('rulesBody').innerHTML = '<h3>طريقة اللعب</h3><ul><li>لكل لاعب 8000 نقطة حياة ودك من 40 بطاقة. تبدأ بـ 5 بطاقات، وتسحب بطاقة في بداية كل دور (اللاعب الأول لا يسحب في دوره الأول).</li><li>استدعاء وحش واحد في الدور. وحوش المستوى 5 و6 تحتاج تضحية بوحش، والمستوى 7 وما فوق يحتاج تضحية بوحشين.</li><li>الوحش إما في وضع الهجوم (مكشوف) أو الدفاع (مكشوف أو مقلوب).</li><li>هجوم ضد هجوم: الأقوى يدمّر الأضعف والفرق يُخصم من حياة صاحبه. التعادل يدمّر الاثنين.</li><li>هجوم ضد دفاع: إذا الهجوم أكبر من الدفاع يتدمّر المدافع بدون خصم. إذا أقل تخسر الفرق.</li><li>إذا ما عند الخصم وحوش تهاجم مباشرة.</li><li>السحر يُستخدم مرة واحدة من اليد. الفخ يُوضع مقلوباً ويُفعَّل عند هجوم الخصم، من الدور التالي لوضعه.</li><li>تفوز عندما تصل حياة الخصم إلى 0 أو لا يملك بطاقة ليسحبها.</li><li>تكسب عملات من كل مباراة، وتشتري بها بطاقات من المتجر. البطاقات الأقوى (مستوى 7 و8) مقفلة حتى تشتريها.</li></ul>';
+  $('rulesOv').classList.add('on');
+};
+$('rulesX').onclick = function () { $('rulesOv').classList.remove('on'); };
+$('bld').textContent = BUILD;
+window.__cg = { G: function () { return G; }, V: function () { return V; }, META: function () { return META; }, CG: CG, startGame: startGame, errs: errs, save: save, load: load, store: function () { return store; }, openShop: openShop, openDeck: openDeck, buy: function (id) { var p = CG.price(id); META.coins -= p; META.owned[id] = (META.owned[id] || 0) + 1; save(); }, render: function () { render(); } };
+if (QA) $('qa').textContent = 'build ' + BUILD + ' menu';
+})();
+</script>
+</body>
+</html>
