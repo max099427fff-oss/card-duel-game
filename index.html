@@ -94,7 +94,7 @@ button:disabled{opacity:.4}
   <h1>معركة البطاقات</h1>
   <div class="coins">🪙 <span id="mcoins">0</span> عملة</div>
   <button class="b pri" id="bAI">⚔️ العب ضد الكمبيوتر</button>
-  <button class="b" id="bOn" disabled>🌐 أونلاين مع صديق (قريباً)</button>
+  <button class="b" id="bOn">🌐 أونلاين مع صديق</button>
   <button class="b" id="bDeck">🃏 رتّب دك البطاقات</button>
   <button class="b" id="bShop">🛒 المتجر</button>
   <button class="b" id="bFx"></button>
@@ -116,6 +116,7 @@ button:disabled{opacity:.4}
 <div class="ov" id="sheetOv"><div class="sheet" id="sheet"></div></div>
 <div class="fx" id="fxOv"><canvas id="fxCv" width="10" height="10" style="display:none"></canvas><div id="fxCss" style="display:none"></div><div id="fxName"></div><div id="fxStat"></div></div>
 <div class="ov" id="trapOv"><div class="sheet" id="trapSheet" style="flex-direction:column"></div></div>
+<div class="ov" id="onOv"><div class="sheet" style="flex-direction:column;text-align:center;gap:8px;min-width:min(300px,90vw)"><h3 style="margin:0">أونلاين</h3><div id="onBody"></div><div id="onBtns"></div></div></div>
 <div class="ov" id="end"><div class="sheet" style="flex-direction:column;text-align:center"><div id="endBody"></div></div></div>
 <div class="ov" id="rulesOv"><div class="sheet" style="flex-direction:column"><div class="rules" id="rulesBody"></div><button id="rulesX" class="pri">تمام</button></div></div>
 <div id="bld"></div><div id="qa"></div>
@@ -185,10 +186,10 @@ var CG = (function () {
   }
   function log(G, s) { G.log.push(s); if (G.log.length > 60) G.log.shift(); }
   function ev(G, o) { G.ev.push(o); }
-  function newGame(seed, first, deckP) {
+  function newGame(seed, first, deckP, deckQ) {
     seed = (seed | 0) || 1;
     var G = { seed: seed, r: rng(seed), uid: 0, turnNo: 1, cur: 0, summoned: false, pending: null, winner: null, log: [], ev: [], ps: [] };
-    G.ps.push(mkP(G, deckP || DECK)); G.ps.push(mkP(G, DECK_B));
+    G.ps.push(mkP(G, deckP || DECK)); G.ps.push(mkP(G, deckQ || DECK_B));
     G.cur = first === 0 || first === 1 ? first : (G.r() < 0.5 ? 0 : 1);
     log(G, 'الدور الأول للاعب ' + (G.cur === 0 ? 'أنت' : 'الخصم'));
     return G;
@@ -461,7 +462,7 @@ var CG = (function () {
 <script id="ui">
 (function () {
 'use strict';
-var BUILD = 'c1-003', Q = new URLSearchParams(location.search), NOSAVE = Q.get('nosave') === '1', QA = Q.get('qa') === '1', AUTO = Q.get('auto') === '1';
+var BUILD = 'c1-004', Q = new URLSearchParams(location.search), NOSAVE = Q.get('nosave') === '1', QA = Q.get('qa') === '1', AUTO = Q.get('auto') === '1';
 var C = CG.CARDS, $ = function (id) { return document.getElementById(id); };
 var errs = []; window.addEventListener('error', function (e) { errs.push(e.message); });
 // ---- save
@@ -509,10 +510,11 @@ function tzH(t, k, i, mine) {
   if (t) h += mine && t.c ? '<div class="card small t-t" style="background:linear-gradient(160deg,#a02a8c,#4a1050)"><div class="n">' + esc(C[t.c.id].name) + '</div></div>' : '<div class="card small back"></div>';
   return h + '</div>';
 }
-function myTurn() { return V && V.cur === 0 && !V.pending && V.winner === null && !AUTO; }
+var MY = 0, ON = null;
+function myTurn() { return V && V.cur === MY && !V.pending && V.winner === null && !AUTO; }
 // ---- render
 function render() {
-  V = CG.view(G, 0);
+  V = ON && ON.role === 'guest' ? ON.view : CG.view(G, MY);
   var o = V.op, m = V.me, hl = mode && mode.hl || {};
   $('oinfo').innerHTML = '<span>🤖 الخصم</span><span>يد ' + o.handN + ' · دك ' + o.deckN + ' · مقبرة ' + o.gy.length + '</span><span class="lp" id="olp">' + o.lp + '</span>';
   $('minfo').innerHTML = '<span>👤 أنت</span><span>دك ' + m.deckN + ' · مقبرة ' + m.gy.length + '</span><span class="lp" id="mlp">' + m.lp + '</span>';
@@ -523,7 +525,7 @@ function render() {
   h = ''; for (i = 0; i < CG.NT; i++) h += tzH(m.tz[i], 'mtz', i, true); $('mtz').innerHTML = h;
   h = ''; m.hand.forEach(function (c, j) { h += cardH(c, { data: 'data-k="hand" data-i="' + j + '"', cls: (sel && sel.k === 'hand' && sel.i === j ? 'sel ' : '') + (myTurn() ? '' : 'off') }); }); $('hand').innerHTML = h;
   $('log').innerHTML = V.log.slice(-3).map(esc).join('<br>');
-  $('turn').textContent = V.winner !== null ? '' : (V.cur === 0 ? 'دورك' : 'دور الخصم') + ' #' + V.turnNo;
+  $('turn').textContent = V.winner !== null ? '' : (V.cur === MY ? 'دورك' : 'دور الخصم') + ' #' + V.turnNo;
   $('bEnd').disabled = !myTurn();
   $('modebar').classList.toggle('on', !!mode); if (mode) { $('modetxt').textContent = mode.txt; $('modeOk').style.display = mode.confirm ? '' : 'none'; $('modeOk').disabled = !(mode.confirm && mode.picked && mode.picked.length === mode.n); }
   tweenLp('olp', 1, o.lp); tweenLp('mlp', 0, m.lp);
@@ -537,7 +539,7 @@ function tweenLp(id, side, to) {
   el.classList.add('f'); var t0 = performance.now(); (function s() { var u = Math.min(1, (performance.now() - t0) / 500); el.textContent = Math.round(from + (to - from) * u); if (u < 1) requestAnimationFrame(s); else el.classList.remove('f'); })();
 }
 function flashEv(e) {
-  var k = e.k === 'atk' ? (e.side === 0 ? 'mmz' : 'omz') : (e.side === 0 ? 'mmz' : 'omz'), idx = e.k === 'atk' ? e.f : e.f;
+  var k = e.side === MY ? 'mmz' : 'omz', idx = e.k === 'atk' ? e.f : e.f;
   var el = document.querySelector('#' + k + ' .slot[data-i="' + idx + '"] .card'); if (el) { el.classList.remove('hit'); void el.offsetWidth; el.classList.add('hit'); }
 }
 // ---- sheet
@@ -551,8 +553,9 @@ function openSheet(c, m, btns, extra) {
   $('sheetOv').classList.add('on'); hiRes($('sheet'));
 }
 function act(a) {
-  var r = CG.apply(G, 0, a); if (!r.ok) { flashMsg(r.err); return r; }
-  mode = null; closeSheet(); render(); kick(); return r;
+  if (ON && ON.role === 'guest') { if (ON.conn && ON.conn.open) ON.conn.send({ t: 'act', a: a }); else flashMsg('لا يوجد اتصال'); mode = null; closeSheet(); return { ok: true }; }
+  var r = CG.apply(G, MY, a); if (!r.ok) { flashMsg(r.err); return r; }
+  mode = null; closeSheet(); if (ON) { sendViews(); return r; } render(); kick(); return r;
 }
 function flashMsg(t) { $('log').innerHTML = '<b style="color:#ff8">' + esc(t) + '</b>'; }
 function cancelMode() { mode = null; render(); }
@@ -636,16 +639,16 @@ function step() {
 // ---- game flow
 var rewarded = false;
 function startGame() {
-  gameNo++; rewarded = false; mode = null; sel = null; lastLp = [8000, 8000];
+  onClose(); MY = 0; gameNo++; rewarded = false; mode = null; sel = null; lastLp = [8000, 8000];
   var dl = deckList(); G = CG.newGame(seed0 ? seed0 + gameNo - 1 : (Math.random() * 1e9) | 0, undefined, dl);
   CG.startTurn(G); show('duel'); $('end').classList.remove('on'); render(); kick();
 }
 function showEnd() {
-  if (!rewarded) { rewarded = true; var w = V.winner === 0, add = w ? 300 : V.winner === 'draw' ? 150 : 100; META.coins += add; save(); V.reward = add; }
-  var w2 = V.winner;
+  if (!rewarded) { rewarded = true; var w = V.winner === MY, add = w ? 300 : V.winner === 'draw' ? 150 : 100; META.coins += add; save(); V.reward = add; }
+  var w2 = V.winner === MY ? 0 : V.winner;
   $('endBody').innerHTML = '<h2>' + (w2 === 0 ? '🏆 فزت!' : w2 === 'draw' ? 'تعادل' : '💀 خسرت') + '</h2><div>مكافأتك: 🪙 ' + (w2 === 0 ? 300 : w2 === 'draw' ? 150 : 100) + ' عملة</div><div class="coins">رصيدك: ' + META.coins + '</div><div class="btns" style="display:flex;flex-direction:column;gap:6px;margin-top:10px"><button class="pri" id="again">العب مرة أخرى</button><button id="toShop">المتجر</button><button id="toMenu">القائمة</button></div>';
   $('end').classList.add('on');
-  $('again').onclick = startGame; $('toShop').onclick = function () { $('end').classList.remove('on'); openShop(); }; $('toMenu').onclick = function () { $('end').classList.remove('on'); show('menu'); };
+  $('again').onclick = function () { if (ON) { onClose(); show('menu'); $('end').classList.remove('on'); } else startGame(); }; $('toShop').onclick = function () { $('end').classList.remove('on'); openShop(); }; $('toMenu').onclick = function () { $('end').classList.remove('on'); show('menu'); };
 }
 // ---- shop and deck
 function openShop() {
@@ -687,7 +690,124 @@ $('rulesX').onclick = function () { $('rulesOv').classList.remove('on'); };
 $('bld').textContent = BUILD;
 window.__cg = { G: function () { return G; }, V: function () { return V; }, META: function () { return META; }, CG: CG, startGame: startGame, errs: errs, save: save, load: load, store: function () { return store; }, openShop: openShop, openDeck: openDeck, buy: function (id) { var p = CG.price(id); META.coins -= p; META.owned[id] = (META.owned[id] || 0) + 1; save(); }, render: function () { render(); } };
 if (QA) $('qa').textContent = 'build ' + BUILD + ' menu';
-// ---- 3D / summon effect (c1-003). Toggle: META.fx3d (default on). Falls back to CSS 3D card if THREE/WebGL fail.
+
+// ---- online (PeerJS, host-authoritative). Host = side 0 runs the game; guest = side 1 sends actions and receives its own view.
+var PEERURL = Q.get('peerjs') || 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js', peerState = 'idle', peerQ = [];
+var PREFIX = Q.get('room') ? '' : 'cgduel-';
+function loadPeer(cb) {
+  if (window.Peer) return cb(true);
+  if (peerState === 'loading') { peerQ.push(cb); return; }
+  peerState = 'loading'; peerQ.push(cb);
+  var s = document.createElement('script'); s.src = PEERURL;
+  function done(ok) { peerState = ok ? 'ready' : 'idle'; var q = peerQ; peerQ = []; q.forEach(function (f) { f(ok); }); }
+  s.onload = function () { done(!!window.Peer); }; s.onerror = function () { done(false); }; document.head.appendChild(s);
+}
+function onMsg(t, btns) {
+  $('onBody').innerHTML = t; var b = $('onBtns'); b.innerHTML = '';
+  (btns || []).forEach(function (x) { var e = document.createElement('button'); e.textContent = x.t; if (x.pri) e.className = 'pri'; e.style.margin = '3px'; e.onclick = x.f; b.appendChild(e); });
+  $('onOv').classList.add('on');
+}
+function onClose() {
+  if (!ON) return; var o = ON; ON = null; MY = 0; clearInterval(o.hb); clearTimeout(o.ft); clearInterval(o.rc);
+  try { if (o.conn) o.conn.close(); } catch (e) {} try { if (o.peer) o.peer.destroy(); } catch (e) {}
+  $('onOv').classList.remove('on');
+}
+function checkDeck(l) {
+  if (!Array.isArray(l)) return null; var n = 0, ok = true, seen = {};
+  l.forEach(function (e) { if (!Array.isArray(e) || !C[e[0]] || typeof e[1] !== 'number' || e[1] < 1 || e[1] > 3 || seen[e[0]]) ok = false; else { seen[e[0]] = 1; n += e[1]; } });
+  return ok && n === 40 ? l : null;
+}
+function menuOnline() {
+  onMsg('العب مع صديق على نفس الرابط. واحد ينشئ غرفة والثاني يدخل الكود.', [
+    { t: 'إنشاء غرفة', pri: true, f: hostRoom }, { t: 'دخول غرفة', f: joinRoom }, { t: 'إغلاق', f: function () { $('onOv').classList.remove('on'); } }]);
+}
+function sendViews() {
+  render();
+  if (ON && ON.role === 'host' && ON.conn && ON.conn.open) { try { ON.conn.send({ t: 'view', v: CG.view(G, 1) }); } catch (e) {} }
+}
+function lost(who) {
+  if (!ON || ON.lost || ON.over) return; ON.lost = Date.now();
+  var left = 30; onMsg('انقطع الاتصال. ننتظر رجوعه <b id="onLeft">30</b> ثانية، بعدها يُحسب انسحاب.', [{ t: 'خروج', f: function () { onClose(); show('menu'); } }]);
+  clearInterval(ON.rc);
+  if (ON.role === 'guest') ON.rc = setInterval(function () { tryRejoin(); }, 4000);
+  ON.ft = setTimeout(function () { forfeit(); }, 30000);
+  ON.cd = setInterval(function () { var l = Math.max(0, 30 - Math.round((Date.now() - ON.lost) / 1000)), e = $('onLeft'); if (e) e.textContent = l; }, 1000);
+}
+function back() { if (!ON || !ON.lost) return; ON.lost = 0; clearTimeout(ON.ft); clearInterval(ON.rc); clearInterval(ON.cd); $('onOv').classList.remove('on'); }
+function forfeit() {
+  if (!ON || ON.over) return; ON.over = true; clearInterval(ON.cd); $('onOv').classList.remove('on');
+  if (ON.role === 'host') { G.winner = 0; G.log.push('الخصم انسحب'); sendViews(); }
+  else { ON.view.winner = 1; ON.view.log = (ON.view.log || []).concat(['الخصم انسحب']); render(); }
+}
+function wire(conn) {
+  var o = ON; o.conn = conn; o.seen = Date.now();
+  conn.on('data', function (m) { if (!ON || ON !== o || !m) return; o.seen = Date.now(); back(); onData(m); });
+  conn.on('close', function () { if (ON === o && o.conn === conn) lost(); });
+  conn.on('error', function () { if (ON === o && o.conn === conn) lost(); });
+  clearInterval(o.hb);
+  o.hb = setInterval(function () { if (!ON || ON !== o) return; try { if (o.conn && o.conn.open) o.conn.send({ t: 'p' }); } catch (e) {} if (Date.now() - o.seen > 10000) lost(); }, 3000);
+}
+function onData(m) {
+  if (m.t === 'p') return;
+  if (ON.role === 'host') {
+    if (m.t === 'hello') {
+      if (!ON.started) {
+        var gd = checkDeck(m.deck) || undefined;
+        G = CG.newGame((Math.random() * 1e9) | 0, undefined, deckList(), gd); CG.startTurn(G);
+        ON.started = true; MY = 0; rewarded = false; mode = null; sel = null; lastLp = [8000, 8000];
+        $('onOv').classList.remove('on'); $('end').classList.remove('on'); show('duel'); sendViews();
+      } else sendViews();
+    } else if (m.t === 'act' && G && G.winner === null && !ON.over) {
+      var s = G.pending ? G.pending.def : G.cur;
+      if (s !== 1) { try { ON.conn.send({ t: 'err', msg: 'ليس دورك' }); } catch (e) {} return; }
+      var r; try { r = CG.apply(G, 1, m.a); } catch (e) { r = { ok: false, err: 'حركة غير صالحة' }; }
+      if (!r.ok) { try { ON.conn.send({ t: 'err', msg: r.err || 'غير مسموح' }); } catch (e) {} return; }
+      sendViews();
+    }
+  } else {
+    if (m.t === 'view' && m.v) {
+      var first = !ON.view; ON.view = m.v; MY = 1;
+      if (first) { rewarded = false; mode = null; sel = null; lastLp = [8000, 8000]; $('onOv').classList.remove('on'); $('end').classList.remove('on'); show('duel'); }
+      render();
+    } else if (m.t === 'err') flashMsg(m.msg);
+  }
+}
+function hostRoom() {
+  onMsg('جاري إنشاء الغرفة...', [{ t: 'إلغاء', f: function () { onClose(); } }]);
+  loadPeer(function (ok) {
+    if (!ok) { onMsg('تعذر تحميل مكتبة الأونلاين. تأكد من الإنترنت.', [{ t: 'إغلاق', f: function () { onClose(); } }]); return; }
+    onClose(); ON = { role: 'host' }; var o = ON, tries = 0;
+    (function mk() {
+      var code = String(1000 + Math.floor(Math.random() * 9000)); var p = new Peer(PREFIX + code); o.peer = p; o.code = code;
+      p.on('open', function () { if (ON !== o) return; onMsg('كود الغرفة: <b style="font-size:34px;letter-spacing:4px;direction:ltr;display:block">' + code + '</b>أعطه لصديقك وانتظر دخوله.', [{ t: 'إلغاء', f: function () { onClose(); } }]); });
+      p.on('connection', function (c) { if (ON !== o) return; if (o.conn && o.conn.open && !o.lost) { try { c.close(); } catch (e) {} return; } wire(c); });
+      p.on('error', function (e) { if (ON !== o) return; if (e && e.type === 'unavailable-id' && tries++ < 5) { try { p.destroy(); } catch (x) {} mk(); return; } if (o.started) return; onMsg('خطأ في الاتصال: ' + (e && e.type || ''), [{ t: 'إغلاق', f: function () { onClose(); } }]); });
+      p.on('disconnected', function () { try { if (ON === o) p.reconnect(); } catch (e) {} });
+    })();
+  });
+}
+function joinRoom() {
+  onMsg('اكتب كود الغرفة:<br><input id="onCode" inputmode="numeric" maxlength="4" style="font-size:26px;width:7em;text-align:center;direction:ltr;margin:8px">', [{ t: 'دخول', pri: true, f: function () { var c = ($('onCode').value || '').trim(); if (!/^\d{4}$/.test(c)) return; doJoin(c); } }, { t: 'إلغاء', f: function () { $('onOv').classList.remove('on'); } }]);
+}
+function doJoin(code) {
+  onMsg('جاري الاتصال...', [{ t: 'إلغاء', f: function () { onClose(); } }]);
+  loadPeer(function (ok) {
+    if (!ok) { onMsg('تعذر تحميل مكتبة الأونلاين. تأكد من الإنترنت.', [{ t: 'إغلاق', f: function () { onClose(); } }]); return; }
+    onClose(); ON = { role: 'guest', code: code, view: null }; var o = ON;
+    var p = new Peer(); o.peer = p;
+    p.on('open', function () { if (ON === o) connectTo(); });
+    p.on('error', function (e) { if (ON !== o) return; if (!o.view) onMsg('ما قدرت أدخل الغرفة (' + (e && e.type || '') + '). تأكد من الكود.', [{ t: 'إغلاق', f: function () { onClose(); } }]); });
+    p.on('disconnected', function () { try { if (ON === o) p.reconnect(); } catch (e) {} });
+  });
+}
+function connectTo() {
+  var o = ON; if (!o || o.over) return; var c = o.peer.connect(PREFIX + o.code, { reliable: true }); var to = setTimeout(function () { if (ON === o && !o.view && !o.lost) onMsg('الغرفة ما ردت. تأكد من الكود.', [{ t: 'إغلاق', f: function () { onClose(); } }]); }, 12000);
+  c.on('open', function () { clearTimeout(to); if (ON !== o) return; wire(c); c.send({ t: 'hello', deck: deckList() }); });
+}
+function tryRejoin() { var o = ON; if (!o || !o.lost || o.over || o.peer.destroyed) return; if (o.peer.disconnected) { try { o.peer.reconnect(); } catch (e) {} } try { connectTo(); } catch (e) {} }
+$('bOn').onclick = menuOnline;
+window.__on = { state: function () { return ON && { role: ON.role, code: ON.code, started: !!ON.started, lost: !!ON.lost, over: !!ON.over, MY: MY }; }, host: hostRoom, join: doJoin, send: function (m) { ON.conn.send(m); }, kill: function () { if (ON && ON.conn) { ON.conn.close(); } }, hardKill: function () { if (ON && ON.peer) { ON.peer.destroy(); } } };
+// ---- 3D / summon effect (c1-004). Toggle: META.fx3d (default on). Falls back to CSS 3D card if THREE/WebGL fail.
 var FX = (function () {
   var THREEURL = Q.get('three') || 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
   var state = 'idle', ren = null, scene = null, cam = null, cur = null, raf = 0, hideT = 0, queue = [];
@@ -790,8 +910,8 @@ var FX = (function () {
   function hide() { var ov = $('fxOv'); if (ov) ov.className = 'fx'; stopLoop(); if (cur && scene) { scene.remove(cur); disp(cur); cur = null; } clearTimeout(hideT); }
   function sum(e, V) {
     if (AUTO || QA && Q.get('fx') !== '1') return;
-    var row = e.side === 0 ? V.me : V.op, m = row && row.mz[e.f]; if (!m || m.fd) return; var d = C[m.c ? m.c.id : m.id]; if (!d || d.t !== 'm') return;
-    show(d, m, e.side);
+    var row = e.side === MY ? V.me : V.op, m = row && row.mz[e.f]; if (!m || m.fd) return; var d = C[m.c ? m.c.id : m.id]; if (!d || d.t !== 'm') return;
+    show(d, m, e.side === MY ? 0 : 1);
   }
   function toggle() { META.fx3d = !on(); save(); label(); if (on()) load(function () {}); }
   function label() { var b = $('bFx'); if (b) b.textContent = '🎬 مؤثرات 3D: ' + (on() ? 'تشغيل' : 'إيقاف'); }
@@ -802,4 +922,4 @@ window.FX = FX;
 })();
 </script>
 </body>
-        </html>
+  </html>
