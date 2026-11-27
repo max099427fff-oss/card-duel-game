@@ -496,7 +496,7 @@ function esc(s) { return String(s).replace(/[&<>]/g, function (c) { return { '&'
 function cardH(c, o) {
   o = o || {}; var d = C[c.id], cls = 'card t-' + d.t + (d.t === 'm' ? ' A-' + d.attr : '') + (o.cls ? ' ' + o.cls : '');
   var st = d.t === 'm' ? '<div class="lv">' + '★'.repeat(Math.min(d.lv, 8)) + '</div><div class="st"><span>' + (CG.eAtk && o.m ? CG.eAtk(o.m) : d.atk) + '</span><span>' + d.def + '</span></div>' : '<div class="st" style="justify-content:center">' + (d.t === 's' ? 'سحر' : 'فخ') + '</div>';
-  return '<div class="' + cls + '" ' + (o.data || '') + '><div class="n">' + esc(d.name) + '</div>' + (typeof ART !== 'undefined' && ART[d.id] ? '<img class="a" src="' + ART[d.id] + '" alt="">' : '<div class="e">' + d.emo + '</div>') + st + '</div>';
+  return '<div class="' + cls + '" ' + (o.data || '') + '><div class="n">' + esc(d.name) + '</div>' + (typeof ART !== 'undefined' && ART[d.id] ? '<img class="a" src="' + ART[d.id] + '"' + (o.hi ? ' data-hi="' + d.id + '"' : '') + ' alt="">' : '<div class="e">' + d.emo + '</div>') + st + '</div>';
 }
 function backH(o) { o = o || {}; return '<div class="card back ' + (o.cls || '') + '" ' + (o.data || '') + '></div>'; }
 function mzH(m, k, i, hl, sl) {
@@ -541,13 +541,14 @@ function flashEv(e) {
   var el = document.querySelector('#' + k + ' .slot[data-i="' + idx + '"] .card'); if (el) { el.classList.remove('hit'); void el.offsetWidth; el.classList.add('hit'); }
 }
 // ---- sheet
+function hiRes(root) { try { root.querySelectorAll('img[data-hi]').forEach(function (im) { var id = im.getAttribute('data-hi'); if (window.ARTHI && ARTHI[id]) { im.src = ARTHI[id]; im.removeAttribute('data-hi'); return; } if (location.protocol === 'file:') return; var s = document.createElement('script'); s.src = 'art/' + id + '.js'; s.onload = function () { if (window.ARTHI && ARTHI[id]) { im.src = ARTHI[id]; im.removeAttribute('data-hi'); } }; document.head.appendChild(s); }); } catch (e) {} }
 function closeSheet() { $('sheetOv').classList.remove('on'); sel = null; }
 function openSheet(c, m, btns, extra) {
   var d = C[c.id], sub = d.t === 'm' ? 'وحش · مستوى ' + d.lv + ' · ' + d.attr + '<br>هجوم ' + (m ? CG.eAtk(m) : d.atk) + ' / دفاع ' + d.def + (CG.need(c) ? '<br>قرابين: ' + CG.need(c) : '') : (d.t === 's' ? 'سحر' : 'فخ');
   var t = d.t === 'm' ? d.text : d.text;
-  $('sheet').innerHTML = '<div class="big">' + cardH(c, { m: m }) + '</div><div class="txt"><h3>' + esc(d.name) + '</h3>' + sub + '<br>' + esc(t) + (extra || '') + '<div class="btns" id="sbtns"></div></div>';
+  $('sheet').innerHTML = '<div class="big">' + cardH(c, { m: m, hi: 1 }) + '</div><div class="txt"><h3>' + esc(d.name) + '</h3>' + sub + '<br>' + esc(t) + (extra || '') + '<div class="btns" id="sbtns"></div></div>';
   var bb = $('sbtns'); btns.concat([{ t: 'إغلاق', f: closeSheet }]).forEach(function (b) { var e = document.createElement('button'); e.textContent = b.t; if (b.pri) e.className = 'pri'; e.onclick = b.f; bb.appendChild(e); });
-  $('sheetOv').classList.add('on');
+  $('sheetOv').classList.add('on'); hiRes($('sheet'));
 }
 function act(a) {
   var r = CG.apply(G, 0, a); if (!r.ok) { flashMsg(r.err); return r; }
@@ -767,7 +768,7 @@ var FX = (function () {
     $('fxName').textContent = d.name; $('fxStat').textContent = '⚔ ' + (CG.eAtk && m ? CG.eAtk(m) : d.atk) + '   🛡 ' + d.def + '   ★' + d.lv;
     ov.className = 'fx on ' + (side === 0 ? 'me' : 'op'); clearTimeout(hideT); hideT = setTimeout(hide, 2200);
     var cv = $('fxCv'), cssc = $('fxCss');
-    function css() { cv.style.display = 'none'; cssc.style.display = ''; cssc.innerHTML = cardH({ id: d.id }); cssc.firstChild.classList.add('fxcard'); }
+    function css() { cv.style.display = 'none'; cssc.style.display = ''; cssc.innerHTML = cardH({ id: d.id }, { hi: 1 }); hiRes(cssc); cssc.firstChild.classList.add('fxcard'); }
     if (!on() || state === 'failed') { css(); return; }
     cssc.style.display = 'none'; cssc.innerHTML = '';
     load(function (ok) {
@@ -801,4 +802,4 @@ window.FX = FX;
 })();
 </script>
 </body>
-</html>
+        </html>
